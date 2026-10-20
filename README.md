@@ -2,49 +2,59 @@
 
 **One torch against the dark.**
 
-### ▶ Play it now: https://retroromrunner.github.io/emberwake/
-*(mirror: https://civic-petal-874k.here.now/)*
+▶ **[Play it in your browser](https://retroromrunner.github.io/emberwake/)** · also on [itch.io](https://retroromrunner.itch.io/emberwake)
 
-![EMBERWAKE gameplay — dashing past a freshly lit bonfire](media/gameplay.gif)
+![EMBERWAKE title screen](media/title.gif)
 
-You are a lone torchbearer crossing a pitch-dark drowned kingdom. Your torch
-flame is both your health *and* your only light — when it dies, so do you.
-Stoke it with kindling, brave the moths, the drizzle, and the tearing wind,
-and light all **7 bonfires** scattered through the night to bring the dawn.
+You are the last torchbearer of a drowned kingdom. Your flame is your life
+and your only light — stoke it with kindling, brave the shadow moths, the
+drizzle and the tearing wind, and light all **7 bonfires** to bring the dawn.
+
+The bonfires move every run. The dark does not care.
 
 ## How to play
 
-- **WASD / Arrow keys** — move
-- **SPACE / SHIFT** — dash-flare: your flame erupts, burning shadow moths and
-  leaving a trail of fire — but every flare costs fuel
-- **P** — pause · **M** — mute · **R** — restart
-- **Touch:** drag anywhere to steer toward your finger; hold the on-screen **FLARE** button (bottom-right) to dash-flare
+- **WASD / Arrow keys** — move (camera-relative, diagonals included)
+- **SPACE / SHIFT** — dash-flare: a burst of flame that burns moths and
+  pushes back the dark, at the cost of your flame
+- **Touch** — drag to steer, hold the FLARE button to dash
+- **P** pause · **M** mute · **R** restart · **H** difficulty
 
-## The night
+Keep your flame alive: it drains over time, faster in the drizzle and when
+the wind gusts outside shelter. Kindling wisps are scattered through the
+ruins — gathering them is the only way to feed the flame.
 
-- Your flame **constantly burns down**. Glowing **kindling wisps** stoke it
-  back up. A bigger flame means a bigger circle of light — and a bigger
-  score multiplier.
-- **Shadow moths** drift out of the dark, drawn to your light. On contact
-  they drink your flame. Burn them with a dash-flare.
-- **Wind gusts** are telegraphed — embers stream sideways and the wind
-  rises — then tear at your flame for a few seconds. Shelter in the **lee of
-  stone pillars** until they pass.
-- **Drizzle patches** hiss on the flame and burn it down twice as fast.
-- Touch a cold **bonfire pyre** with a healthy flame to ignite it: a burst
-  of embers, a full refill, and a checkpoint of light in the dark. Light all
-  seven and dawn breaks.
-- If the flame reaches zero, it gutters out. Your best score is remembered.
+## Difficulty
 
-## Screenshots
+- **NORMAL** — the game as intended. Lighting a bonfire restores your flame.
+- **HARD** — the tiles themselves turn ember-red. The flame burns far
+  faster, the moths are quicker and hungrier, kindling is scarce — and
+  lighting a bonfire does **not** refuel you. Only kindling does. Every
+  route between pyres is a wager.
 
-![Title screen](media/title.png)
+## The fires
 
-![Gameplay — the dash-flare trail, a lit bonfire, and the stone floor fading into the dark](media/gameplay.png)
+Three different fires burn in EMBERWAKE:
+
+- The **title screen** is framed by two great walls of layered silhouette
+  flame and a grand center flame, with sparks spinning off into the dark —
+  a tribute to the game's 2D origins.
+- Your **torch** is a living shader flame that gutters, sputters and flares
+  with your dash, and its flickering light is all that holds back the dark.
+- A lit **bonfire** is a true 3D particle fire — hundreds of swirling
+  particles running white-hot at the base to deep red at the tips.
+
+![Lighting a bonfire](media/bonfire.png)
+
+![Dashing through the ruins](media/gameplay.png)
 
 ## About
 
-A single self-contained HTML file — no build step, no assets, everything
-drawn and sounded procedurally (including the fire, the torchbearer sprite,
-and the full WebAudio soundscape). Built with AI assistance for the
-[AI Browser Game Jam 5](https://itch.io/jam/ai-jam-5) (theme: TORCH).
+Built for **AI Browser Game Jam 5** (theme: **TORCH**). An isometric
+Three.js game in a single HTML file — every texture, sprite, sound and
+song of the dark is generated procedurally in code; there are no asset
+files. The synthesized audio (fire rumble, crackle, wind, the great burn
+of a lighting pyre) is all WebAudio, made at runtime.
+
+*The original 2D version of EMBERWAKE is preserved under the
+[v1.0 release](https://github.com/retroromrunner/emberwake/releases/tag/v1.0).*

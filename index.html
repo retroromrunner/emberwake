@@ -1,56 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>EMBERWAKE — a TORCH-lit crossing</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EMBERWAKE ISO — isometric prototype</title>
 <style>
-  html,body{margin:0;padding:0;background:#010104;height:100%;overflow:hidden}
-  body{display:flex;align-items:center;justify-content:center}
-  canvas{display:block;background:#04040c;touch-action:none;user-select:none;-webkit-user-select:none}
+  html,body{margin:0;padding:0;background:#020208;overflow:hidden;height:100%;
+    font-family:Georgia,'Times New Roman',serif;-webkit-user-select:none;user-select:none;}
+  #app{position:fixed;inset:0;}
+  canvas{display:block;}
+  #vig{position:fixed;inset:0;pointer-events:none;z-index:3;
+    background:radial-gradient(ellipse at center, transparent 52%, rgba(0,0,5,0.55) 100%);}
+  #hud{position:fixed;top:0;left:0;right:0;z-index:5;pointer-events:none;
+    display:none;padding:14px 18px;color:#e8dcc4;}
+  #hud .row{display:flex;justify-content:space-between;align-items:flex-start;}
+  #flameWrap{width:210px;}
+  #flameLabel{font-size:13px;letter-spacing:2px;color:#ffb066;}
+  #flameBarBg{height:9px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,170,90,0.35);margin-top:4px;}
+  #flameBar{height:100%;width:100%;background:linear-gradient(90deg,#e84a10,#ff9a2e,#ffd76e);}
+  #mult{font-size:12px;color:#ffc98a;margin-top:3px;}
+  #bonfires{font-size:17px;letter-spacing:3px;color:#ffd9a0;text-shadow:0 0 12px rgba(255,140,40,0.6);}
+  #scoreWrap{text-align:right;}
+  #score{font-size:17px;letter-spacing:2px;color:#ffd9a0;}
+  #best{font-size:11px;color:#9a8d76;letter-spacing:1px;margin-top:2px;}
+  #msg{position:fixed;top:19%;left:0;right:0;z-index:6;text-align:center;pointer-events:none;
+    font-size:21px;letter-spacing:4px;color:#ffd9a0;text-shadow:0 0 18px rgba(255,120,30,0.8);
+    opacity:0;transition:opacity 0.35s;}
+  .overlay{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;color:#e8dcc4;background:rgba(2,2,10,0.32);padding:20px;}
+  .overlay h1{font-size:52px;margin:0;letter-spacing:6px;color:#f3e6c8;
+    text-shadow:0 0 34px rgba(255,120,30,0.55);}
+  .overlay h2{font-size:17px;margin:8px 0 0;letter-spacing:5px;color:#ff9a3c;font-weight:normal;}
+  .badge{margin-top:12px;font-size:11px;letter-spacing:3px;color:#0c0c14;background:#ffb35c;
+    padding:4px 12px;border-radius:10px;font-family:monospace;}
+  .overlay p{max-width:520px;line-height:1.55;color:#cfc3ab;font-size:15.5px;margin:18px 0 4px;}
+  .overlay .controls{font-size:13.5px;color:#9a8d76;letter-spacing:1px;line-height:1.9;}
+  .modebox{display:inline-block;margin-top:18px;padding:13px 24px 11px;border:2px solid rgba(255,150,50,0.8);border-radius:10px;background:rgba(24,9,2,0.6);pointer-events:auto;animation:firebox 1.5s ease-in-out infinite alternate;}
+  @keyframes firebox{from{box-shadow:0 0 12px rgba(255,110,20,0.45),inset 0 0 14px rgba(255,90,10,0.22);border-color:rgba(255,140,40,0.6);}to{box-shadow:0 0 28px rgba(255,135,25,0.85),inset 0 0 32px rgba(255,110,20,0.42);border-color:rgba(255,190,90,0.98);}}
+  .mode-title{font-size:11px;letter-spacing:4px;color:#c79a5e;margin-bottom:9px;}
+  .mode-opt{display:inline-block;padding:7px 20px;margin:0 5px;border:1px solid rgba(255,170,90,0.55);border-radius:6px;cursor:pointer;letter-spacing:3px;font-size:14px;color:#d8b988;background:rgba(0,0,0,0.25);}
+  .mode-opt:hover{color:#fff;border-color:#ffd9a0;}
+  .mode-opt.sel{background:linear-gradient(180deg,rgba(255,150,40,0.4),rgba(205,70,10,0.4));color:#ffedbe;border-color:#ffcf7d;box-shadow:0 0 12px rgba(255,140,30,0.65);}
+  .modehint{margin-top:9px;font-size:10px;letter-spacing:2px;color:#8a6f47;}
+  #bonfires.hard{color:#ff8a5e;}
+  .overlay .go{margin-top:20px;font-size:15px;letter-spacing:3px;color:#ffd9a0;
+    animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:0.45}50%{opacity:1}}
+  .hidden{display:none !important;}
+  #flareBtn{position:fixed;right:26px;bottom:30px;z-index:7;width:84px;height:84px;border-radius:50%;
+    border:2px solid rgba(255,170,80,0.8);background:radial-gradient(circle at 50% 65%, #ff9a2e, #b23c08 62%, #40190a);
+    color:#ffe9c4;font-family:Georgia,serif;font-size:14px;letter-spacing:1px;display:none;
+    box-shadow:0 0 26px rgba(255,130,40,0.55);touch-action:none;}
+  #flareBtn.on{filter:brightness(1.5);}
 </style>
 </head>
 <body>
-<canvas id="cv" width="960" height="540"></canvas>
+<div id="app"></div>
+<div id="vig"></div>
+<div id="flash" style="position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at center, rgba(255,190,110,0.9), rgba(255,120,40,0.35) 55%, transparent 78%);"></div>
+<div id="hud">
+  <div class="row">
+    <div id="flameWrap">
+      <div id="flameLabel">FLAME</div>
+      <div id="flameBarBg"><div id="flameBar"></div></div>
+      <div id="mult"></div>
+    </div>
+    <div id="bonfires">BONFIRES 0/7</div>
+    <div id="scoreWrap"><div id="score">SCORE 0</div><div id="best">BEST 0</div></div>
+  </div>
+</div>
+<div id="msg"></div>
+<div id="title" class="overlay">
+  <h1>EMBERWAKE</h1>
+  <h2>ONE TORCH AGAINST THE DARK</h2>
+  <p>Your flame is your life and your only light. Stoke it with kindling,
+     brave the moths, the drizzle and the tearing wind, and light all
+     <b>7 bonfires</b> to bring the dawn.</p>
+  <div class="controls">WASD / Arrows — move &nbsp;·&nbsp; SPACE / SHIFT — dash-flare<br>
+     P — pause &nbsp;·&nbsp; M — mute &nbsp;·&nbsp; R — restart<br>
+     Touch: drag to steer · hold the FLARE button to dash</div>
+  <div class="go">CLICK OR PRESS ENTER TO TAKE UP THE TORCH</div>
+    <div class="modebox" id="modeBox">
+      <div class="mode-title">— DIFFICULTY —</div>
+      <span class="mode-opt sel" id="optNormal">NORMAL</span><span class="mode-opt" id="optHard">HARD</span>
+      <div class="modehint">HARD: faster burn · faster, hungrier moths · scarcer kindling</div>
+    </div>
+</div>
+<div id="end" class="overlay hidden">
+  <h1 id="endTitle">DAWN BREAKS</h1>
+  <p id="endText"></p>
+  <div class="go">PRESS R TO PLAY AGAIN · ENTER FOR TITLE</div>
+</div>
+<button id="flareBtn">FLARE</button>
+
+<script src="./three.min.js"></script>
 <script>
 'use strict';
-/* ================================================================
-   EMBERWAKE — a lone torchbearer crosses a pitch-dark drowned
-   kingdom. Your torch flame is your health AND your only light.
-   Light all 7 bonfires to bring the dawn before the flame dies.
-   AI Browser Game Jam 5 — theme: TORCH. Single file, no assets.
-   ================================================================ */
-var W=960, H=540;
-var WORLD_W=2600, WORLD_H=1800;
-var cv=document.getElementById('cv');
-var ctx=cv.getContext('2d');
-
-/* fit canvas to window, keep 16:9 */
-function fitCanvas(){
-  var ww=window.innerWidth||W, wh=window.innerHeight||H;
-  var s=Math.min(ww/W, wh/H);
-  cv.style.width=Math.floor(W*s)+'px';
-  cv.style.height=Math.floor(H*s)+'px';
-}
-if(window.addEventListener) window.addEventListener('resize',fitCanvas);
-fitCanvas();
-
-/* ---------------- utils ---------------- */
+/* =====================================================================
+   EMBERWAKE ISO — an isometric Three.js prototype of EMBERWAKE.
+   Game logic runs in the original's pixel space (2600x1800) and is
+   mirrored faithfully; only the renderer is new: GLSL flame shaders,
+   billboard sprites, meshes, dynamic firelight.
+   ===================================================================== */
 function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
-function lerp(a,b,t){ return a+(b-a)*t; }
-function dist(x1,y1,x2,y2){ var dx=x2-x1, dy=y2-y1; return Math.sqrt(dx*dx+dy*dy); }
-/* deterministic decor RNG (visual only) */
-var _seed=1877;
-function srand(){ _seed=(_seed*1103515245+12345)&0x7fffffff; return _seed/0x7fffffff; }
-/* smooth flicker noise from layered sines */
-function flick(t,seed){
-  return 0.86
-    + 0.07*Math.sin(t*11.3+seed)
-    + 0.045*Math.sin(t*23.7+seed*1.7)
-    + 0.025*Math.sin(t*41.1+seed*0.6);
-}
+function dist(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+var _s=1234567; function srand(){ _s=(_s*16807)%2147483647; return (_s-1)/2147483646; }
 
-/* ---------------- audio (all procedural WebAudio) ---------------- */
+/* ---------------- audio (all procedural WebAudio — same as 2D) ---------------- */
 var AC=null, master=null, muted=false;
 var crackleGain=null, rumbleGain=null, windGain=null;
 function audioInit(){
@@ -60,26 +116,22 @@ function audioInit(){
     if(!Ctor) return;
     AC=new Ctor();
     master=AC.createGain(); master.gain.value=muted?0:0.5; master.connect(AC.destination);
-    /* looping noise buffer */
     var len=AC.sampleRate*2, buf=AC.createBuffer(1,len,AC.sampleRate), d=buf.getChannelData(0);
     for(var i=0;i<len;i++) d[i]=Math.random()*2-1;
-    /* fire rumble: looped noise through lowpass */
     var rum=AC.createBufferSource(); rum.buffer=buf; rum.loop=true;
     var rumF=AC.createBiquadFilter(); rumF.type='lowpass'; rumF.frequency.value=320;
     rumbleGain=AC.createGain(); rumbleGain.gain.value=0.0;
     rum.connect(rumF); rumF.connect(rumbleGain); rumbleGain.connect(master); rum.start();
-    /* crackle bed: looped noise through bandpass, gain wobbled by the game */
     var crk=AC.createBufferSource(); crk.buffer=buf; crk.loop=true; crk.playbackRate.value=0.7;
     var crkF=AC.createBiquadFilter(); crkF.type='bandpass'; crkF.frequency.value=2400; crkF.Q.value=0.6;
     crackleGain=AC.createGain(); crackleGain.gain.value=0.0;
     crk.connect(crkF); crkF.connect(crackleGain); crackleGain.connect(master); crk.start();
-    /* wind bed */
     var wnd=AC.createBufferSource(); wnd.buffer=buf; wnd.loop=true; wnd.playbackRate.value=0.35;
     var wndF=AC.createBiquadFilter(); wndF.type='bandpass'; wndF.frequency.value=600; wndF.Q.value=1.4;
     windGain=AC.createGain(); windGain.gain.value=0.0;
     wnd.connect(wndF); wndF.connect(windGain); windGain.connect(master); wnd.start();
     AC._noiseBuf=buf;
-  }catch(e){ AC=null; }
+  }catch(e){ AC=null; window.__audioErr=(e&&e.name)+': '+(e&&e.message); }
 }
 function noiseBurst(dur,freq0,freq1,vol,type,delay){
   if(!AC||muted) return;
@@ -117,21 +169,18 @@ function sfx(name){
   if(name==='dash'){ noiseBurst(0.32,500,2400,0.5); }
   else if(name==='kindle'){ tone(660,990,0.16,0.16,'triangle'); tone(1320,1760,0.2,0.08,'sine',0.04); }
   else if(name==='ignite'){
-    /* the full rewarding burn: the whoosh of the flame catching, a deep
-       whumpf, a rolling roar peppered with crackle pops, and a bright
-       success arpeggio riding on top */
-    noiseBurst(0.35,300,2600,0.5,'bandpass');            /* flame catches */
-    tone(160,52,0.55,0.5,'sine',0.02);                   /* whumpf */
-    noiseBurst(1.3,500,220,0.42,'lowpass',0.05);         /* rolling roar */
-    noiseBurst(0.9,900,500,0.22,'bandpass',0.08);        /* flame body */
+    noiseBurst(0.35,300,2600,0.5,'bandpass');
+    tone(160,52,0.55,0.5,'sine',0.02);
+    noiseBurst(1.3,500,220,0.42,'lowpass',0.05);
+    noiseBurst(0.9,900,500,0.22,'bandpass',0.08);
     var pops=[0.16,0.27,0.41,0.55,0.72,0.9,1.08];
     for(var pp=0;pp<pops.length;pp++)
       noiseBurst(0.05,1800+((pp*733)%1400),900,0.16,'bandpass',pops[pp]);
-    tone(196,196,1.3,0.18,'sine',0.05);                  /* warm root */
+    tone(196,196,1.3,0.18,'sine',0.05);
     tone(392,392,0.5,0.13,'triangle',0.10);
     tone(494,494,0.5,0.13,'triangle',0.17);
     tone(587,587,0.6,0.13,'triangle',0.24);
-    tone(784,784,0.9,0.15,'triangle',0.31);               /* bright reward top */
+    tone(784,784,0.9,0.15,'triangle',0.31);
   }
   else if(name==='burn'){ noiseBurst(0.18,900,300,0.25); tone(880,220,0.15,0.08,'square'); }
   else if(name==='gutter'){ tone(300,46,1.6,0.25,'sine'); noiseBurst(1.1,800,120,0.18,'lowpass'); }
@@ -139,80 +188,13 @@ function sfx(name){
   else if(name==='click'){ tone(520,700,0.07,0.1,'triangle'); }
 }
 
-/* ============================== INPUT ==============================
-   House pattern (from GRAVE TITHE): keys set on keydown, cleared on
-   keyup; ALL input cleared on window blur / tab hidden so a held
-   input can never latch; run start clears everything; the tap that
-   starts the game must not leak into play as steering. */
-var keys={}, pressed={};
-addEventListener('keydown',function(e){
-  audioInit(); if(AC&&AC.state==='suspended')AC.resume();
-  var k=e.key.toLowerCase();
-  if(['arrowup','arrowdown','arrowleft','arrowright',' '].indexOf(k)>=0||e.key===' ') e.preventDefault();
-  if(!keys[k]) pressed[k]=true;
-  keys[k]=true; keys[e.key]=true;
-  if(k==='m'){ muted=!muted; if(master) master.gain.value=muted?0:0.5; }
-});
-addEventListener('keyup',function(e){ keys[e.key.toLowerCase()]=false; keys[e.key]=false; });
-function keyDown(){ for(var i=0;i<arguments.length;i++){ if(keys[arguments[i]]) return true; } return false; }
-function keyHit(){ for(var i=0;i<arguments.length;i++){ if(pressed[arguments[i]]) return true; } return false; }
-/* touch: drag anywhere = virtual steering toward the touch point;
-   dash-flare comes ONLY from the on-screen FLARE button (bottom-right),
-   a deliberate target, so steering can never accidentally dash.
-   Roles are fixed per finger where the touch lands. */
-var touchMove=null, touchFlare=false, isTouch=('ontouchstart' in window);
-var touchRoles={};
-var playStartedAt=0;
-var startTapPos=null;
-var touchIgnored={};
-var FLARE_BTN={x:W-70,y:H-76,r:36};
-function canvasPos(t){ var r=cv.getBoundingClientRect(); return {x:(t.clientX-r.left)*W/r.width, y:(t.clientY-r.top)*H/r.height}; }
-function touchRoleAt(p){
-  if(state==='play'&&Math.hypot(p.x-FLARE_BTN.x,p.y-FLARE_BTN.y)<=FLARE_BTN.r+14) return 'flare';
-  return 'move';
-}
-function touchSync(){
-  touchFlare=false; touchMove=null;
-  for(var id in touchRoles){ var t=touchRoles[id];
-    if(t.role==='flare') touchFlare=true;
-    else if(t.role==='move') touchMove=t.pos;
-  }
-}
-cv.addEventListener('pointerdown',function(e){ audioInit(); if(AC&&AC.state==='suspended')AC.resume(); handleTap(canvasPos(e)); });
-cv.addEventListener('touchstart',function(e){
-  audioInit(); if(AC&&AC.state==='suspended')AC.resume();
-  for(var i=0;i<e.changedTouches.length;i++){ var t=e.changedTouches[i],p=canvasPos(t);
-    /* The tap that starts the game (handleTap, via pointerdown) must not leak
-       into play as steering: ignore a touch beginning at (near) the starting
-       tap's own position within 1s of the run starting. Its later touchmove is
-       ignored too because it is never registered. */
-    if(state==='play'&&startTapPos&&Date.now()-playStartedAt<1000&&Math.hypot(p.x-startTapPos.x,p.y-startTapPos.y)<40){ touchIgnored[t.identifier]=true; continue; }
-    touchRoles[t.identifier]={role:touchRoleAt(p),pos:p}; }
-  touchSync(); if(e.cancelable) e.preventDefault();
-},{passive:false});
-cv.addEventListener('touchmove',function(e){
-  for(var i=0;i<e.changedTouches.length;i++){ var t=e.changedTouches[i]; if(touchRoles[t.identifier]) touchRoles[t.identifier].pos=canvasPos(t); }
-  touchSync(); if(e.cancelable) e.preventDefault();
-},{passive:false});
-function touchEnd(e){ for(var i=0;i<e.changedTouches.length;i++){ delete touchRoles[e.changedTouches[i].identifier]; delete touchIgnored[e.changedTouches[i].identifier]; } touchSync(); }
-cv.addEventListener('touchend',touchEnd);
-cv.addEventListener('touchcancel',touchEnd);
-function clearAllInput(){ keys={}; pressed={}; touchRoles={}; touchIgnored={}; touchSync(); }
-addEventListener('blur',clearAllInput);
-if(document.addEventListener) document.addEventListener('visibilitychange',function(){ if(document.hidden) clearAllInput(); });
-
-/* ============================== WORLD DATA ============================== */
+/* ============================== WORLD DATA (same as 2D) ============================== */
+var WORLD_W=2600, WORLD_H=1800;
 var SPAWN={x:300,y:1500};
 var BONFIRES=[
-  {x:560, y:1500},
-  {x:1050,y:1380},
-  {x:1500,y:1050},
-  {x:1250,y:620},
-  {x:1750,y:420},
-  {x:2250,y:760},
-  {x:2150,y:1350}
+  {x:560,y:1500},{x:1050,y:1380},{x:1500,y:1050},{x:1250,y:620},
+  {x:1750,y:420},{x:2250,y:760},{x:2150,y:1350}
 ];
-/* stone pillars / ruins: block movement; their lee shelters from wind */
 var PILLARS=[
   {x:760,y:1620},{x:880,y:1180},{x:1240,y:1500},{x:1700,y:1250},{x:1950,y:1500},
   {x:700,y:900},{x:450,y:1150},{x:1650,y:800},{x:2050,y:1150},{x:900,y:450},
@@ -220,48 +202,119 @@ var PILLARS=[
   {x:600,y:1750},{x:400,y:300},{x:2400,y:1000}
 ];
 var PILLAR_W=46, PILLAR_H=62;
-/* drizzle patches: flame burns faster inside */
-var DRIZZLE=[
-  {x:950,y:950,r:160},{x:1850,y:1050,r:180},{x:550,y:550,r:150},{x:1500,y:1550,r:170}
-];
+var DRIZZLE=[{x:950,y:950,r:160},{x:1850,y:1050,r:180},{x:550,y:550,r:150},{x:1500,y:1550,r:170}];
 var KINDLE_FIXED=[{x:392,y:1500},{x:1440,y:1100},{x:1330,y:700},{x:1980,y:560}];
 
 /* ============================== STATE ============================== */
-var state='title'; /* title, play, win, lose */
-var paused=false;
-var timeG=0, runTime=0;
-var player=null, flame=100, litCount=0, score=0, hiScore=0;
-var bonfires=[], wisps=[], moths=[], parts=[], rings=[];
-var cam={x:0,y:1230};
-var wind={phase:'calm', t:5+Math.random()*3, dir:1, strength:0}; /* calm -> telegraph -> gust */
-var mothTimer=1.5, wispTimer=0;
-var flareT=0, dashCD=0, sheltered=false, inDrizzle=false;
-var dawnT=0, flashA=0, perfScale=1, emaDt=16.7;
-var finalScore=0;
-try{ hiScore=+localStorage.getItem('emberwake_hi')||0; }catch(e){ hiScore=0; }
-function saveHi(){ try{ localStorage.setItem('emberwake_hi',''+hiScore); }catch(e){} }
+var state='title', paused=false;
+var player=null, flame=100, litCount=0, score=0, finalScore=0, hiScore=0;
+var bonfires=[], wisps=[], moths=[], parts=[];
+var wind={phase:'calm',t:6,dir:1,strength:0};
+var flareT=0, dashCD=0, mothTimer=1.5, wispTimer=0, timeG=0, runTime=0;
+var sheltered=false, inDrizzle=false, msgT=0;
+try{ hiScore=+localStorage.getItem('emberwake_iso_hi')||0; }catch(e){ hiScore=0; }
+function saveHi(){ try{ localStorage.setItem('emberwake_iso_hi',''+hiScore); }catch(e){} }
+var difficulty='normal';
+function setDifficulty(d){
+  difficulty=d;
+  document.getElementById('optNormal').classList.toggle('sel',d==='normal');
+  document.getElementById('optHard').classList.toggle('sel',d==='hard');
+  var bf=document.getElementById('bonfires');
+  bf.textContent='BONFIRES '+litCount+'/7'+(d==='hard'?' · HARD MODE':'');
+  bf.classList.toggle('hard',d==='hard');
+  if(typeof groundUniforms!=='undefined') groundUniforms.uHard.value=(d==='hard'?1:0);
+}
 function scoreMult(){ return 1+1.5*(flame/100); }
 function addScore(n){ score+=Math.round(n*scoreMult()); }
+function showMsg(t,hold){ var m=document.getElementById('msg'); m.textContent=t; m.style.opacity=1; msgT=hold||2.2; }
 
+/* ============================== INPUT ============================== */
+var keys={}, pressed={};
+function keyDown(a,b){ return !!(keys[a]||(b&&keys[b])); }
+function keyHit(a,b){ return !!(pressed[a]||(b&&pressed[b])); }
+addEventListener('keydown',function(e){
+  audioInit(); if(AC&&AC.state==='suspended')AC.resume();
+  var k=e.key.toLowerCase();
+  if([' ','arrowup','arrowdown','arrowleft','arrowright'].indexOf(k)>=0) e.preventDefault();
+  if(!keys[k]) pressed[k]=true;
+  keys[k]=true;
+  if(k==='enter'){
+    if(state==='title') startRun();
+    else if(state==='win'||state==='lose') toTitle();
+  }
+  if(k==='r'&&state!=='title') startRun();
+  if(k==='p'&&state==='play') paused=!paused;
+  if(k==='m'){ muted=!muted; if(master) master.gain.value=muted?0:0.5; }
+  if(k==='h'&&(state==='title'||state==='win'||state==='lose')){ setDifficulty(difficulty==='hard'?'normal':'hard'); sfx('click'); }
+});
+addEventListener('keyup',function(e){ keys[e.key.toLowerCase()]=false; });
+function clearAllInput(){ keys={}; pressed={}; touchFlare=false; touchTarget=null; }
+addEventListener('blur',clearAllInput);
+document.addEventListener('visibilitychange',function(){ if(document.hidden) clearAllInput(); });
+
+/* touch: drag steers (ground point stored in px space), FLARE button dashes */
+var touchTarget=null, touchFlare=false, touchStartAt=0, touchStartPos=null;
+var flareBtn=document.getElementById('flareBtn');
+flareBtn.addEventListener('touchstart',function(e){ e.preventDefault(); touchFlare=true; flareBtn.classList.add('on'); },{passive:false});
+flareBtn.addEventListener('touchend',function(e){ e.preventDefault(); touchFlare=false; flareBtn.classList.remove('on'); },{passive:false});
+flareBtn.addEventListener('touchcancel',function(){ touchFlare=false; flareBtn.classList.remove('on'); });
+
+function randomBonfires(){
+  /* fresh, well-spread pyre locations every run: clear of spawn,
+     pillars and drizzle pools, and far from each other */
+  var pts=[], tries=0;
+  while(pts.length<7 && tries<1200){
+    tries++;
+    var x=150+Math.random()*(WORLD_W-300), y=150+Math.random()*(WORLD_H-300);
+    if(dist(x,y,SPAWN.x,SPAWN.y)<270) continue;
+    var ok=true, i2;
+    for(i2=0;i2<pts.length;i2++) if(dist(x,y,pts[i2].x,pts[i2].y)<350){ ok=false; break; }
+    if(!ok) continue;
+    for(i2=0;i2<PILLARS.length;i2++) if(dist(x,y,PILLARS[i2].x+23,PILLARS[i2].y+31)<110){ ok=false; break; }
+    if(!ok) continue;
+    for(i2=0;i2<DRIZZLE.length;i2++) if(dist(x,y,DRIZZLE[i2].x,DRIZZLE[i2].y)<DRIZZLE[i2].r+35){ ok=false; break; }
+    if(!ok) continue;
+    pts.push({x:x,y:y});
+  }
+  while(pts.length<7) pts.push(BONFIRES[pts.length]);
+  return pts;
+}
 function reset(){
-  /* A fresh run starts with no latched input. */
-  keys={}; pressed={}; touchRoles={}; touchIgnored={}; touchSync();
-  playStartedAt=Date.now(); startTapPos=null;
+  keys={}; pressed={}; touchTarget=null; touchFlare=false;
   player={x:SPAWN.x,y:SPAWN.y,vx:0,vy:0,dir:1,impX:0,impY:0,walk:0};
   flame=100; litCount=0; score=0; runTime=0;
-  bonfires=BONFIRES.map(function(b){ return {x:b.x,y:b.y,lit:false,ph:Math.random()*6.28}; });
-  wisps=[]; moths=[]; parts=[]; rings=[];
-  KINDLE_FIXED.forEach(function(k){ wisps.push({x:k.x,y:k.y,ph:Math.random()*6.28,fixed:true}); });
-  for(var i=0;i<22;i++) spawnWisp(true);
+  bonfires=randomBonfires().map(function(b){ return {x:b.x,y:b.y,lit:false,ph:Math.random()*6.28}; });
+  wisps=[]; moths=[]; parts=[];
+  KINDLE_FIXED.forEach(function(k){
+    for(var bi2=0;bi2<bonfires.length;bi2++) if(dist(k.x,k.y,bonfires[bi2].x,bonfires[bi2].y)<85) return;
+    wisps.push({x:k.x,y:k.y,ph:Math.random()*6.28,fixed:true});
+  });
+  for(var i=0;i<(difficulty==='hard'?13:22);i++) spawnWisp(true);
   mothTimer=1.5; wispTimer=0;
-  wind={phase:'calm', t:6+Math.random()*3, dir:1, strength:0};
-  flareT=0; dashCD=0; dawnT=0; flashA=0; paused=false;
-  cam.x=clamp(player.x-W/2,0,WORLD_W-W); cam.y=clamp(player.y-H/2,0,WORLD_H-H);
+  wind={phase:'calm',t:6+Math.random()*3,dir:1,strength:0};
+  flareT=0; dashCD=0; paused=false;
+  syncBonfireViews(true);
+}
+function startRun(){
+  audioInit(); if(AC&&AC.state==='suspended')AC.resume();
+  reset(); state='play';
+  document.getElementById('title').classList.add('hidden');
+  document.getElementById('end').classList.add('hidden');
+  document.getElementById('hud').style.display='block';
+  if('ontouchstart' in window) flareBtn.style.display='block';
+  sfx('click');
+}
+function toTitle(){
+  state='title';
+  document.getElementById('end').classList.add('hidden');
+  document.getElementById('hud').style.display='none';
+  flareBtn.style.display='none';
+  document.getElementById('title').classList.remove('hidden');
 }
 function spawnWisp(anywhere){
   for(var tries=0;tries<12;tries++){
     var x=40+Math.random()*(WORLD_W-80), y=40+Math.random()*(WORLD_H-80);
-    if(!anywhere && dist(x,y,player.x,player.y)<340) continue;
+    if(!anywhere && player && dist(x,y,player.x,player.y)<340) continue;
     var bad=false;
     for(var i=0;i<bonfires.length;i++) if(dist(x,y,bonfires[i].x,bonfires[i].y)<70){ bad=true; break; }
     if(bad) continue;
@@ -274,26 +327,60 @@ function spawnMoth(){
   var x=clamp(player.x+Math.cos(a)*d,24,WORLD_W-24);
   var y=clamp(player.y+Math.sin(a)*d,24,WORLD_H-24);
   if(dist(x,y,player.x,player.y)<220){ x=clamp(player.x+(player.x<WORLD_W/2?430:-430),24,WORLD_W-24); }
-  moths.push({x:x,y:y,ph:Math.random()*6.28,burn:0,latched:false,
-    sp:74+litCount*4+Math.random()*10});
+  moths.push({x:x,y:y,ph:Math.random()*6.28,burn:0,latched:false,sp:(74+litCount*4+Math.random()*10)*(difficulty==='hard'?1.7:1)});
 }
-function torchTip(){
-  return {x:player.x+player.dir*13, y:player.y-34};
+/* particles live in ground px space (x,y) + height h (px above ground) */
+function spawnP(o){ if(parts.length<1400) parts.push(o); }
+function emberBurst(x,y,n,big){
+  for(var i=0;i<n;i++){
+    var a=Math.random()*6.283, sp=(big?60:36)+Math.random()*(big?150:70);
+    spawnP({kind:'burst',x:x,y:y,h:12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,vh:50+Math.random()*(big?120:70),
+      life:0,max:0.7+Math.random()*0.9,size:(big?0.105:0.07)+Math.random()*0.06,seed:Math.random()*10,
+      cr:1.0,cg:0.5+Math.random()*0.3,cb:0.15,a0:0.95});
+  }
+  if(big){
+    /* the ignition blast: a column of flame sparks erupting upward */
+    for(var j=0;j<46;j++){
+      spawnP({kind:'flame',x:x+(Math.random()-0.5)*22,y:y+(Math.random()-0.5)*22,h:14,
+        vx:(Math.random()-0.5)*26,vy:(Math.random()-0.5)*20,vh:120+Math.random()*130,
+        life:0,max:0.45+Math.random()*0.4,size:0.16+Math.random()*0.13,seed:Math.random()*10,
+        cr:1.0,cg:0.5,cb:0.13,a0:0.75});
+    }
+  }
+}
+/* expanding rings of fire from an ignition, like the 2D version */
+var fireRings=[];
+function spawnFireRing(x,y){
+  var m=null;
+  for(var i=0;i<fireRings.length;i++) if(!fireRings[i].active){ m=fireRings[i]; break; }
+  if(!m){
+    if(fireRings.length>=4) return;
+    var texC=cnv(256,256), tg=texC.getContext('2d');
+    var gr=tg.createRadialGradient(128,128,10,128,128,128);
+    gr.addColorStop(0,'rgba(255,120,20,0)');
+    gr.addColorStop(0.62,'rgba(255,120,20,0)');
+    gr.addColorStop(0.80,'rgba(255,110,20,0.55)');
+    gr.addColorStop(0.90,'rgba(255,185,75,0.95)');
+    gr.addColorStop(0.97,'rgba(255,225,160,0.55)');
+    gr.addColorStop(1,'rgba(255,120,20,0)');
+    tg.fillStyle=gr; tg.fillRect(0,0,256,256);
+    var mesh=new THREE.Mesh(new THREE.CircleGeometry(1,44),
+      new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(texC),transparent:true,opacity:0,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    mesh.rotation.x=-Math.PI/2; mesh.position.y=0.06; mesh.renderOrder=6; mesh.visible=false;
+    scene.add(mesh);
+    m={mesh:mesh,t:0,active:false};
+    fireRings.push(m);
+  }
+  m.mesh.position.x=X3(x); m.mesh.position.z=Z3(y);
+  m.t=0; m.active=true; m.mesh.visible=true;
 }
 function isSheltered(){
-  /* sheltered if a pillar stands upwind within its lee (90px) and roughly level */
+  if(wind.strength<=0.3) return false;
   for(var i=0;i<PILLARS.length;i++){
     var p=PILLARS[i];
-    var cx=p.x+PILLAR_W/2, cy=p.y+PILLAR_H/2;
-    if(Math.abs(cy-player.y)>52) continue;
-    if(wind.dir>0){ /* wind blows toward +x: lee is right of the pillar */
-      var gap=player.x-(p.x+PILLAR_W);
-      if(gap>=-6&&gap<92) return true;
-    }else{
-      var gap2=p.x-player.x;
-      if(gap2>=-6&&gap2<92) return true;
-    }
-    void cx;
+    var lx = wind.dir>0 ? p.x+PILLAR_W : p.x-92;
+    if(player.x>lx&&player.x<lx+92&&player.y>p.y-6&&player.y<p.y+PILLAR_H+6) return true;
   }
   return false;
 }
@@ -302,72 +389,705 @@ function inDrizzleAt(x,y){
   return false;
 }
 
-/* ============================== PARTICLES ============================== */
-var MAXP=950;
-function spawnP(p){
-  if(parts.length>=MAXP*perfScale) return;
-  parts.push(p);
+/* =====================================================================
+   THREE.JS SCENE
+   px space -> world units: S=0.02, X=(x-1300)*S, Z=(y-900)*S
+   ===================================================================== */
+var S=0.02;
+function X3(x){ return (x-WORLD_W/2)*S; }
+function Z3(y){ return (y-WORLD_H/2)*S; }
+var app=document.getElementById('app');
+var renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.setClearColor(0x020208,1);
+app.appendChild(renderer.domElement);
+var scene=new THREE.Scene();
+var VIEW_H=15.5;
+var camera=new THREE.OrthographicCamera(-1,1,1,-1,-50,200);
+var CAM_OFF=new THREE.Vector3(24,24,24);
+function frameCamera(){
+  var a=innerWidth/innerHeight;
+  camera.left=-VIEW_H*a/2; camera.right=VIEW_H*a/2;
+  camera.top=VIEW_H/2; camera.bottom=-VIEW_H/2;
+  camera.updateProjectionMatrix();
 }
-function emberBurst(x,y,n,big){
-  for(var i=0;i<n;i++){
-    var a=Math.random()*6.283, sp=20+Math.random()*(big?190:90);
-    spawnP({kind:'burst',x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,
-      life:0,max:0.5+Math.random()*(big?1.1:0.6),size:1.5+Math.random()*(big?3:2)});
-  }
-}
-function updateParts(dt){
-  for(var i=parts.length-1;i>=0;i--){
-    var p=parts[i]; p.life+=dt;
-    if(p.life>=p.max){ parts.splice(i,1); continue; }
-    if(p.kind==='flame'){
-      p.vy-=160*dt; p.vx+=Math.sin((timeG+p.seed)*9)*22*dt + wind.strength*wind.dir*60*dt;
-      p.x+=p.vx*dt; p.y+=p.vy*dt;
-    }else if(p.kind==='ember'){
-      p.vx+=wind.strength*wind.dir*130*dt; p.vy-=14*dt;
-      p.x+=p.vx*dt; p.y+=p.vy*dt;
-    }else if(p.kind==='spinoff'){
-      p.vx+=Math.sin(timeG*3+p.seed*7)*26*dt; p.vy-=30*dt;
-      p.x+=p.vx*dt; p.y+=p.vy*dt;
-    }else if(p.kind==='smoke'){
-      p.vy-=26*dt; p.vx+=wind.strength*wind.dir*40*dt+Math.sin(timeG*2+p.seed)*6*dt;
-      p.x+=p.vx*dt; p.y+=p.vy*dt; p.size+=7*dt;
-    }else if(p.kind==='trail'){
-      p.vx+=Math.sin(timeG*7+p.seed)*30*dt; p.vy-=30*dt;
-      p.x+=p.vx*dt; p.y+=p.vy*dt;
-    }else if(p.kind==='burst'){
-      p.vx*=Math.pow(0.12,dt); p.vy=p.vy*Math.pow(0.12,dt)-24*dt;
-      p.x+=p.vx*dt; p.y+=p.vy*dt;
-    }else if(p.kind==='ambient'){
-      p.x+=(p.vx+wind.strength*wind.dir*90)*dt; p.y+=p.vy*dt;
-      if(p.x<-10)p.x=W+10; if(p.x>W+10)p.x=-10;
-      if(p.y<-10)p.y=H+10; if(p.y>H+10)p.y=-10;
+frameCamera();
+scene.add(new THREE.AmbientLight(0x2a1c12,0.38));
+var moon=new THREE.DirectionalLight(0x33415e,0.14);
+moon.position.set(-18,30,-8); scene.add(moon);
+
+/* ---------------- canvas textures ---------------- */
+function cnv(w,h){ var c=document.createElement('canvas'); c.width=w; c.height=h; return c; }
+function groundTexture(){
+  var c=cnv(2048,1440), g=c.getContext('2d');
+  g.fillStyle='#0b0b10'; g.fillRect(0,0,2048,1440);
+  var TS=50; /* 64 game px -> ~50 tex px */
+  for(var ty=0;ty<1440/TS;ty++){
+    var off=(ty%2)*TS/2;
+    for(var tx=-1;tx<2048/TS+1;tx++){
+      var x0=tx*TS+off, y0=ty*TS;
+      var tv=((srand()*12-6)|0), rust=srand()<0.30, dk=srand()<0.14;
+      var r=40+tv-(dk?9:0), gg=36+tv-(dk?8:0), b=35+tv-(dk?7:0);
+      if(rust){ r+=14; gg-=1; b-=5; }
+      g.fillStyle='rgb('+r+','+gg+','+b+')';
+      g.fillRect(x0+1.5,y0+1.5,TS-3,TS-3);
+      g.fillStyle='rgba(255,190,150,0.05)'; g.fillRect(x0+1.5,y0+1.5,TS-3,2.5);
+      g.fillStyle='rgba(0,0,0,0.18)'; g.fillRect(x0+1.5,y0+TS-4.5,TS-3,3);
+      if(srand()<0.3){
+        g.strokeStyle='rgba(0,0,0,0.20)'; g.lineWidth=1;
+        var kx=x0+6+srand()*32, ky=y0+6+srand()*32;
+        g.beginPath(); g.moveTo(kx,ky); g.lineTo(kx+5+srand()*8,ky+3+srand()*6); g.stroke();
+      }
     }
   }
-  for(var r=rings.length-1;r>=0;r--){
-    rings[r].r+=260*dt; rings[r].a-=dt*0.9;
-    if(rings[r].a<=0) rings.splice(r,1);
+  for(var s2=0;s2<260;s2++){ /* scuffs and stains */
+    g.fillStyle='rgba(0,0,0,'+(0.03+Math.random()*0.07)+')';
+    g.beginPath(); g.ellipse(Math.random()*2048,Math.random()*1440,20+Math.random()*90,12+Math.random()*50,Math.random()*3,0,6.29); g.fill();
+  }
+  var t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4;
+  return t;
+}
+function stoneTexture(){
+  var c=cnv(128,256), g=c.getContext('2d');
+  g.fillStyle='#3d4356'; g.fillRect(0,0,128,256);
+  for(var y=0;y<4;y++) for(var x=0;x<2;x++){
+    var v=(Math.random()*14-7)|0, ox=(y%2)*32;
+    g.fillStyle='rgb('+(66+v)+','+(74+v)+','+(94+v)+')';
+    g.fillRect(x*64+ox-32+2,y*64+2,60,60);
+    g.fillStyle='rgba(255,235,200,0.06)'; g.fillRect(x*64+ox-32+2,y*64+2,60,3);
+  }
+  g.strokeStyle='rgba(0,0,0,0.35)'; g.lineWidth=2;
+  g.beginPath(); g.moveTo(20,40); g.lineTo(38,74); g.lineTo(30,110); g.stroke();
+  var t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+  return t;
+}
+function glowTexture(){
+  var c=cnv(128,128), g=c.getContext('2d');
+  var gr=g.createRadialGradient(64,64,2,64,64,62);
+  gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(0.35,'rgba(255,255,255,0.45)');
+  gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=gr; g.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(c);
+}
+var GLOW_TEX=glowTexture();
+function bearerAtlas(){
+  /* the 2D bearer's baked frames, drawn at 2x: 4 frames of 112x144 */
+  var c=cnv(448,144), g=c.getContext('2d');
+  var CFG=[
+    {bootL:[-4,0], bootR:[5,0],  hemL:-10, hemR:10, hemY:59, hoodX:0, hand:[10,-22], sash:-0.5},
+    {bootL:[9,-3], bootR:[-8,0], hemL:-13, hemR:7,  hemY:59, hoodX:0, hand:[10,-22], sash:-0.5},
+    {bootL:[-8,0], bootR:[9,-3], hemL:-7,  hemR:13, hemY:59, hoodX:0, hand:[10,-22], sash:-0.5},
+    {bootL:[-9,-2],bootR:[-4,-4],hemL:-17, hemR:3,  hemY:53, hoodX:3, hand:[13,-23], sash:-0.9}
+  ];
+  for(var f=0;f<4;f++){
+    var cf=CFG[f];
+    g.save(); g.translate(f*112+56,120); g.scale(2,2);
+    g.fillStyle='#151824';
+    g.beginPath(); g.ellipse(cf.bootL[0],-1.5+cf.bootL[1],4.2,2.4,0,0,6.29); g.fill();
+    g.beginPath(); g.ellipse(cf.bootR[0],-1.5+cf.bootR[1],4.2,2.4,0,0,6.29); g.fill();
+    var cg=g.createLinearGradient(0,-30,0,0);
+    cg.addColorStop(0,'#4a5f9e'); cg.addColorStop(1,'#27335c');
+    g.fillStyle=cg;
+    g.beginPath();
+    g.moveTo(-6,-27); g.lineTo(7,-27);
+    g.lineTo(cf.hemR,cf.hemY-60); g.lineTo(cf.hemL,cf.hemY-60);
+    g.closePath(); g.fill();
+    g.strokeStyle='rgba(255,150,60,0.4)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(-6,-27); g.lineTo(cf.hemL,cf.hemY-60); g.stroke();
+    g.strokeStyle='rgba(255,170,80,0.75)'; g.lineWidth=1.6;
+    g.beginPath(); g.moveTo(cf.hemL,cf.hemY-60); g.lineTo(cf.hemR,cf.hemY-60); g.stroke();
+    g.save(); g.translate(0,-17); g.rotate(cf.sash);
+    g.fillStyle='#d0681e'; g.fillRect(-8,-2,16,4); g.restore();
+    g.fillStyle='#5468a8';
+    g.beginPath(); g.arc(cf.hoodX,-30,8.2,0,6.29); g.fill();
+    g.fillStyle='#101018';
+    g.beginPath(); g.arc(cf.hoodX+2,-29,4.8,0,6.29); g.fill();
+    g.fillStyle='#ffb35c';
+    g.beginPath(); g.arc(cf.hoodX+0.8,-29.6,0.85,0,6.29); g.fill();
+    g.beginPath(); g.arc(cf.hoodX+3.4,-29.6,0.85,0,6.29); g.fill();
+    g.strokeStyle='rgba(255,190,100,0.95)'; g.lineWidth=1.4;
+    g.beginPath(); g.arc(cf.hoodX,-30,8.2,-0.9,0.9); g.stroke();
+    g.strokeStyle='#3a4a7d'; g.lineWidth=4; g.lineCap='round';
+    g.beginPath(); g.moveTo(5,-25); g.lineTo(cf.hand[0],cf.hand[1]); g.stroke();
+    g.strokeStyle='#6b4423'; g.lineWidth=3.6;
+    g.beginPath(); g.moveTo(cf.hand[0],cf.hand[1]); g.lineTo(13,-34); g.stroke();
+    g.fillStyle='#3d2712';
+    g.beginPath(); g.ellipse(13,-38,4.6,6.5,0,0,6.29); g.fill();
+    g.fillStyle='#ffb35c';
+    g.beginPath(); g.arc(11,-40,1.0,0,6.29); g.fill();
+    g.beginPath(); g.arc(15,-35,1.0,0,6.29); g.fill();
+    g.restore();
+  }
+  var t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+  t.wrapS=THREE.RepeatWrapping; t.repeat.set(0.25,1);
+  return t;
+}
+function mothTexture(){
+  var c=cnv(128,96), g=c.getContext('2d');
+  g.fillStyle='#0d0d16';
+  g.beginPath(); g.ellipse(26,34,24,10,-0.55,0,6.29); g.fill();
+  g.beginPath(); g.ellipse(102,34,24,10,0.55,0,6.29); g.fill();
+  g.beginPath(); g.ellipse(64,46,11,14,0,0,6.29); g.fill();
+  g.strokeStyle='rgba(190,200,220,0.28)'; g.lineWidth=2;
+  g.beginPath(); g.ellipse(26,34,24,10,-0.55,0,6.29); g.stroke();
+  g.beginPath(); g.ellipse(102,34,24,10,0.55,0,6.29); g.stroke();
+  var t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+  return t;
+}
+
+/* ---------------- GLSL flame ---------------- */
+var FLAME_VERT=[
+  'varying vec2 vUv;',
+  'uniform float uTime; uniform float uSway;',
+  'void main(){',
+  '  vUv=uv;',
+  '  vec3 p=position;',
+  '  float bend=sin(uTime*2.1+uv.y*4.0)*0.03*uSway;',
+  '  p.x+=bend*uv.y*uv.y;',
+  '  gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);',
+  '}'
+].join('\n');
+var FLAME_FRAG=[
+  'precision highp float;',
+  'varying vec2 vUv;',
+  'uniform float uTime,uIntensity,uSeed,uWind;',
+  'float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }',
+  'float noise(vec2 p){',
+  '  vec2 i=floor(p), f=fract(p);',
+  '  f=f*f*(3.0-2.0*f);',
+  '  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),',
+  '             mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);',
+  '}',
+  'float fbm(vec2 p){',
+  '  float v=0.0, a=0.55;',
+  '  for(int i=0;i<4;i++){ v+=a*noise(p); p*=2.13; a*=0.5; }',
+  '  return v;',
+  '}',
+  'void main(){',
+  '  vec2 uv=vUv;',
+  '  float t=uTime*1.9+uSeed*23.0;',
+  '  float n=fbm(vec2(uv.x*3.0+uSeed*9.0, uv.y*2.3 - t*2.4));',
+  '  float n2=fbm(vec2(uv.x*6.5-uSeed*5.0, uv.y*4.5 - t*3.6));',
+  '  float sway=(n-0.5)*0.34*uv.y + uWind*uv.y*uv.y*0.6;',
+  '  float cx=abs(uv.x-0.5+sway);',
+  '  float w=mix(0.335,0.012,pow(uv.y,0.72))*(0.80+0.42*n2);',
+  '  float body=smoothstep(w,w*0.28,cx);',
+  '  float vert=smoothstep(1.03,0.5,uv.y+(n-0.5)*0.5);',
+  '  float a=body*vert*uIntensity;',
+  '  if(a<0.004) discard;',
+  '  vec3 col=mix(vec3(0.86,0.15,0.02), vec3(1.0,0.47,0.07), clamp(a*1.5-uv.y*0.45,0.0,1.0));',
+  '  col=mix(col, vec3(1.0,0.78,0.30), clamp(body*body*1.25-uv.y*0.38,0.0,1.0));',
+  '  col=mix(col, vec3(1.0,0.97,0.87), clamp(pow(body,3.0)*1.5-uv.y*0.95,0.0,1.0));',
+  '  gl_FragColor=vec4(col*a*1.7, a);',
+  '  #include <tonemapping_fragment>',
+  '  #include <encodings_fragment>',
+  '}'
+].join('\n');
+function makeFlame(w,h,seed){
+  var mat=new THREE.ShaderMaterial({
+    vertexShader:FLAME_VERT, fragmentShader:FLAME_FRAG,
+    uniforms:{ uTime:{value:0}, uIntensity:{value:1}, uSeed:{value:seed},
+               uWind:{value:0}, uSway:{value:1} },
+    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    side:THREE.DoubleSide
+  });
+  var geo=new THREE.PlaneGeometry(w,h);
+  geo.translate(0,h/2,0);
+  var m=new THREE.Mesh(geo,mat);
+  m.rotation.y=Math.PI/4;
+  m.renderOrder=20;
+  return m;
+}
+
+/* =====================================================================
+   SILHOUETTE FLAMES — the original 2D title technique, ported: grand
+   flames drawn as layered rippling silhouettes (deep red -> orange ->
+   yellow -> white cores) onto canvas textures. Deliberately a
+   different fire language from the torch's GLSL noise shader.
+   ===================================================================== */
+function drawGrandFlame(g,w,h,t,phase){
+  var layers=[
+    {s:1.00,hf:1.00,col:'rgba(214,52,10,0.52)',sp:1.00},
+    {s:0.76,hf:0.80,col:'rgba(255,126,22,0.70)',sp:1.27},
+    {s:0.53,hf:0.58,col:'rgba(255,205,92,0.88)',sp:1.55},
+    {s:0.31,hf:0.36,col:'rgba(255,246,205,0.96)',sp:1.90}
+  ];
+  var cx=w/2, yBase=h-3, N=24;
+  g.clearRect(0,0,w,h);
+  for(var li=0;li<layers.length;li++){
+    var L=layers[li], tt=t*L.sp+phase+li*0.85;
+    var hh=(h-8)*L.hf*(0.94+0.09*Math.sin(tt*2.3));
+    g.fillStyle=L.col;
+    g.beginPath();
+    for(var i=0;i<=N;i++){
+      var f=i/N;
+      var y=yBase-hh*f;
+      var prof=Math.pow(1-f,0.65)*(0.84+0.16*Math.sin(tt*3.4+f*8.0))*(0.80+0.20*Math.sin(tt*5.9+f*19.0+li*1.2));
+      var hw=w*0.5*L.s*prof;
+      var sway=Math.sin(tt*1.9+f*4.2)*w*0.08*f*f+Math.sin(tt*3.7+f*9.0)*w*0.03*f;
+      if(i===0) g.moveTo(cx-hw+sway,yBase); else g.lineTo(cx-hw+sway,y);
+    }
+    for(var j=N;j>=0;j--){
+      var f2=j/N;
+      var y2=yBase-hh*f2;
+      var prof2=Math.pow(1-f2,0.65)*(0.84+0.16*Math.sin(tt*3.4+f2*8.0+1.9))*(0.80+0.20*Math.sin(tt*5.9+f2*19.0+li*1.2+2.3));
+      var hw2=w*0.5*L.s*prof2;
+      var sway2=Math.sin(tt*1.9+f2*4.2)*w*0.08*f2*f2+Math.sin(tt*3.7+f2*9.0)*w*0.03*f2;
+      g.lineTo(cx+hw2+sway2,y2);
+    }
+    g.closePath(); g.fill();
   }
 }
-/* ambient screen-space embers, always drifting */
-var ambEmbers=[];
-for(var ai=0;ai<42;ai++) ambEmbers.push({kind:'ambient',x:Math.random()*W,y:Math.random()*H,
-  vx:-6+Math.random()*12,vy:-4-Math.random()*8,life:0,max:1e9,size:0.8+Math.random()*1.4,seed:Math.random()*10});
-/* title-screen ember field: glowing embers wandering the whole background,
-   each fading in, drifting, and fading out before respawning elsewhere */
-var titleEmbers=[];
-for(var te=0;te<90;te++) titleEmbers.push({x:Math.random()*W,y:Math.random()*H,
-  vx:-7+Math.random()*14,vy:-3-Math.random()*10,size:0.8+Math.random()*2.2,
-  seed:Math.random()*10,ph:Math.random(),dur:6+Math.random()*7,hero:Math.random()<0.14});
+function drawWallFlame(g,w,h,t,phase){
+  /* one continuous flame WALL: a rippling silhouette band, wide and
+     calm at the base, pinched and licking at the top, with stretched
+     flame streaks rising through it */
+  var layers=[
+    {s:1.00,col:'rgba(214,52,10,0.50)',sp:1.00},
+    {s:0.78,col:'rgba(255,126,22,0.68)',sp:1.24},
+    {s:0.55,col:'rgba(255,205,92,0.86)',sp:1.52},
+    {s:0.33,col:'rgba(255,246,205,0.95)',sp:1.85}
+  ];
+  var K=30;
+  g.clearRect(0,0,w,h);
+  for(var li=0;li<layers.length;li++){
+    var L=layers[li], tt=t*L.sp+phase+li*0.9;
+    var pts=[];
+    for(var i=0;i<=K;i++){
+      var f=i/K;
+      var halfW=w*0.5*L.s*(0.62+0.30*Math.sin(Math.min(1,f*1.15)*Math.PI*0.82))*(0.84+0.16*Math.sin(tt*3.0+f*9.0+li*1.3));
+      var cxo=Math.sin(tt*1.6+f*4.2)*w*0.09*f+Math.sin(tt*3.1+f*10.0)*w*0.03*f;
+      pts.push({f:f,hw:halfW,cx:w/2+cxo});
+    }
+    g.fillStyle=L.col;
+    g.beginPath();
+    g.moveTo(pts[0].cx-pts[0].hw,h);
+    for(var a=1;a<=K;a++) g.lineTo(pts[a].cx-pts[a].hw,h-pts[a].f*h);
+    for(var pk=0;pk<6;pk++){ /* licking peaks across the top */
+      var pf=pk/5, px=pts[K].cx-pts[K].hw+pf*pts[K].hw*2;
+      var py=h-h*(1.0+0.10*Math.sin(tt*4.3+pk*2.4+li));
+      g.lineTo(px,py);
+    }
+    for(var b=K;b>=0;b--) g.lineTo(pts[b].cx+pts[b].hw,h-pts[b].f*h);
+    g.closePath(); g.fill();
+    /* rising stretched streaks inside the wall */
+    for(var s2=0;s2<9;s2++){
+      var ph2=((t*0.30* L.sp + s2*0.173 + phase*0.13 + li*0.29) % 1);
+      var sy=h-ph2*h*0.96, sx=w/2+Math.sin(s2*7.3+li*2.0+tt*1.2)*w*0.20*(1-ph2*0.4);
+      g.fillStyle='rgba(255,'+(150+li*30)+',60,'+(0.20*(1-ph2))+')';
+      g.beginPath(); g.ellipse(sx,sy,2.5+li*0.8,13+16*(1-ph2),0,0,6.29); g.fill();
+    }
+  }
+}
+function flameCanvas(w,h){
+  var c=cnv(w,h);
+  var tex=new THREE.CanvasTexture(c);
+  tex.colorSpace=THREE.SRGBColorSpace;
+  return {cv:c, g:c.getContext('2d'), tex:tex};
+}
+var wallCvL=flameCanvas(240,520), wallCvR=flameCanvas(240,520),
+    centerCv=flameCanvas(320,300);
+var flameFrame=0;
+function updateFlameCanvases(){
+  flameFrame++;
+  if(flameFrame%2) return; /* 30Hz is plenty for silhouette fire */
+  if(titleFx.visible){
+    drawWallFlame(wallCvL.g,240,520,timeG,0.0); wallCvL.tex.needsUpdate=true;
+    drawWallFlame(wallCvR.g,240,520,timeG,2.63); wallCvR.tex.needsUpdate=true;
+    drawGrandFlame(centerCv.g,320,300,timeG,5.03); centerCv.tex.needsUpdate=true;
+  }
+}
+function canvasFlameMesh(tex,w,h){
+  var geo=new THREE.PlaneGeometry(w,h);
+  geo.translate(0,h/2,0);
+  var m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tex,transparent:true,
+    depthWrite:false,side:THREE.DoubleSide}));
+  m.rotation.y=Math.PI/4;
+  m.renderOrder=20;
+  return m;
+}
 
-/* ============================== ACTIONS ============================== */
+/* ---------------- ground with hand-rolled firelight ---------------- */
+var groundUniforms={
+  uHard:{value:0},
+  uMap:{value:groundTexture()},
+  uLP:{value:[...Array(8)].map(function(){ return new THREE.Vector3(0,-10,0); })},
+  uLC:{value:[...Array(8)].map(function(){ return new THREE.Vector3(0,0,0); })},
+  uLR:{value:new Array(8).fill(0)}
+};
+var groundMat=new THREE.ShaderMaterial({
+  uniforms:groundUniforms,
+  vertexShader:[
+    'varying vec2 vUv; varying vec3 vWp;',
+    'void main(){ vUv=uv; vec4 wp=modelMatrix*vec4(position,1.0); vWp=wp.xyz;',
+    ' gl_Position=projectionMatrix*viewMatrix*wp; }'
+  ].join('\n'),
+  fragmentShader:[
+    'precision highp float;',
+    'uniform sampler2D uMap; uniform float uHard;',
+    'uniform vec3 uLP[8]; uniform vec3 uLC[8]; uniform float uLR[8];',
+    'varying vec2 vUv; varying vec3 vWp;',
+    'void main(){',
+    '  vec3 base=texture2D(uMap,vUv).rgb;',
+    '  vec3 col=base*vec3(0.05,0.044,0.042);',
+    '  for(int i=0;i<8;i++){',
+    '    float r=uLR[i];',
+    '    if(r>0.01){',
+    '      float d=distance(vWp,uLP[i]);',
+    '      float at=clamp(1.0-d/r,0.0,1.0); at=pow(at,1.75);',
+    '      col+=base*uLC[i]*at;',
+    '    }',
+    '  }',
+    '  col=mix(col, col*vec3(1.28,0.74,0.68)+vec3(0.006,0.0,0.0), uHard*0.45);',
+    '  gl_FragColor=vec4(col,1.0);',
+    '  #include <tonemapping_fragment>',
+    '  #include <encodings_fragment>',
+    '}'
+  ].join('\n')
+});
+var ground=new THREE.Mesh(new THREE.PlaneGeometry(WORLD_W*S,WORLD_H*S),groundMat);
+ground.rotation.x=-Math.PI/2;
+scene.add(ground);
+
+/* ---------------- pillars (meshes) ---------------- */
+var stoneTex=stoneTexture();
+var pillarMat=new THREE.MeshLambertMaterial({map:stoneTex});
+var capMat=new THREE.MeshLambertMaterial({color:0x565f76});
+PILLARS.forEach(function(p){
+  var grp=new THREE.Group();
+  var body=new THREE.Mesh(new THREE.BoxGeometry(PILLAR_W*S,2.3,PILLAR_H*S),pillarMat);
+  body.position.y=1.15;
+  var cap=new THREE.Mesh(new THREE.BoxGeometry(PILLAR_W*S+0.14,0.2,PILLAR_H*S+0.14),capMat);
+  cap.position.y=2.36;
+  var base=new THREE.Mesh(new THREE.BoxGeometry(PILLAR_W*S+0.18,0.22,PILLAR_H*S+0.18),capMat);
+  base.position.y=0.11;
+  grp.add(body); grp.add(cap); grp.add(base);
+  grp.position.set(X3(p.x+PILLAR_W/2),0,Z3(p.y+PILLAR_H/2));
+  scene.add(grp);
+});
+
+/* ---------------- drizzle zones ---------------- */
+var rainViews=[];
+DRIZZLE.forEach(function(dz){
+  var disc=new THREE.Mesh(new THREE.CircleGeometry(dz.r*S,36),
+    new THREE.MeshBasicMaterial({color:0x4d739e,transparent:true,opacity:0.09,depthWrite:false}));
+  disc.rotation.x=-Math.PI/2; disc.position.set(X3(dz.x),0.02,Z3(dz.y));
+  scene.add(disc);
+  var N=70, pos=new Float32Array(N*3), drops=[];
+  for(var i=0;i<N;i++){
+    var a=Math.random()*6.283, rr=Math.sqrt(Math.random())*dz.r*S;
+    drops.push({x:Math.cos(a)*rr,z:Math.sin(a)*rr,y:Math.random()*3.2});
+  }
+  var geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  var pts=new THREE.Points(geo,new THREE.PointsMaterial({size:2.2,sizeAttenuation:false,
+    color:0xa8c8ff,transparent:true,opacity:0.5,map:GLOW_TEX,depthWrite:false}));
+  pts.position.set(X3(dz.x),0,Z3(dz.y));
+  scene.add(pts);
+  rainViews.push({dz:dz,drops:drops,geo:geo});
+});
+
+/* ---------------- bonfire views ---------------- */
+var logMat=new THREE.MeshLambertMaterial({color:0x4a3220,emissive:0x000000});
+var stoneMat=new THREE.MeshLambertMaterial({color:0x59637a});
+/* -------- bonfire particle fire (shared shader, per-pyre geometry) -------- */
+var bfFireMat=new THREE.ShaderMaterial({
+  uniforms:{uMap:{value:GLOW_TEX},uPx:{value:600}},
+  vertexShader:[
+    'attribute float aSize; attribute float aLife;',
+    'varying float vL; uniform float uPx;',
+    'void main(){ vL=aLife;',
+    ' vec4 mv=modelViewMatrix*vec4(position,1.0);',
+    ' gl_PointSize=aSize*uPx;',
+    ' gl_Position=projectionMatrix*mv; }'
+  ].join('\n'),
+  fragmentShader:[
+    'precision highp float;',
+    'uniform sampler2D uMap; varying float vL;',
+    'void main(){',
+    ' vec4 tx=texture2D(uMap,gl_PointCoord);',
+    ' vec3 c1=vec3(1.0,0.97,0.86), c2=vec3(1.0,0.74,0.24), c3=vec3(1.0,0.34,0.05), c4=vec3(0.5,0.05,0.0);',
+    ' vec3 col=vL<0.18? mix(c1,c2,vL/0.18) : vL<0.55? mix(c2,c3,(vL-0.18)/0.37) : mix(c3,c4,(vL-0.55)/0.45);',
+    ' float a=tx.a*pow(1.0-vL,0.6)*0.92;',
+    ' if(a<0.004) discard;',
+    ' gl_FragColor=vec4(col*a,a);',
+    '}'
+  ].join('\n'),
+  transparent:true, blending:THREE.AdditiveBlending, depthWrite:false
+});
+var BF_PARTS=260;
+function bfRespawn(p,warm){
+  p.a=Math.random()*6.283;
+  p.r=Math.sqrt(Math.random())*0.44;
+  p.life=0.6+Math.random()*0.65;
+  p.age=warm? Math.random()*p.life*0.9 : 0;
+  p.rise=2.2+Math.random()*1.7;
+  p.swirl=(Math.random()-0.5)*2.6;
+}
+function makeBonfireFire(){
+  var geo=new THREE.BufferGeometry();
+  var pos=new Float32Array(BF_PARTS*3), sz=new Float32Array(BF_PARTS), lf=new Float32Array(BF_PARTS);
+  var dat=[];
+  for(var i=0;i<BF_PARTS;i++){ var p={}; bfRespawn(p,true); dat.push(p); }
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('aSize',new THREE.BufferAttribute(sz,1));
+  geo.setAttribute('aLife',new THREE.BufferAttribute(lf,1));
+  var points=new THREE.Points(geo,bfFireMat);
+  points.frustumCulled=false; points.renderOrder=19;
+  return {points:points,dat:dat,pos:pos,sz:sz,lf:lf,geo:geo,base:0.95+Math.random()*0.15};
+}
+function updateBonfireFire(v,dt){
+  var f=v.fire; if(!f) return;
+  bfFireMat.uniforms.uPx.value=innerHeight/VIEW_H;
+  var flash=v.flash||0, n=f.dat.length;
+  for(var i=0;i<n;i++){
+    var p=f.dat[i];
+    p.age+=dt;
+    if(p.age>=p.life) bfRespawn(p,false);
+    var hf=p.age/p.life;
+    var h=p.rise*p.age*(1+0.45*flash);
+    var ang=p.a+p.age*p.swirl;
+    var rr=p.r*(1-hf*0.55);
+    f.pos[i*3]=Math.cos(ang)*rr;
+    f.pos[i*3+1]=0.10+h;
+    f.pos[i*3+2]=Math.sin(ang)*rr;
+    f.sz[i]=(0.52*(1-hf)+0.16)*(0.72+0.28*Math.sin(3.14159*Math.min(1,hf*1.12)))*(1+0.7*flash)*f.base;
+    f.lf[i]=hf;
+  }
+  f.geo.attributes.position.needsUpdate=true;
+  f.geo.attributes.aSize.needsUpdate=true;
+  f.geo.attributes.aLife.needsUpdate=true;
+}
+var bfViews=[];
+BONFIRES.forEach(function(b,i){
+  var grp=new THREE.Group();
+  grp.position.set(X3(b.x),0,Z3(b.y));
+  for(var li=0;li<3;li++){
+    var log=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.95,7),logMat);
+    log.rotation.z=1.15; log.rotation.y=li*2.1; log.position.y=0.13;
+    grp.add(log);
+  }
+  for(var si=0;si<7;si++){
+    var sa=si/7*6.283+i;
+    var st=new THREE.Mesh(new THREE.DodecahedronGeometry(0.105),stoneMat);
+    st.position.set(Math.cos(sa)*0.56,0.06,Math.sin(sa)*0.56);
+    st.rotation.set(sa,sa*2,0);
+    grp.add(st);
+  }
+  /* bonfires burn as a real 3D particle fire: a swirling cone of
+     flame particles — nothing like the title's silhouette flames */
+  var flame=makeBonfireFire();
+  flame.visible=false;
+  grp.add(flame.points);
+  var light=new THREE.PointLight(0xff8f3a,0,11,1.7);
+  light.position.y=1.15; grp.add(light);
+  var pool=new THREE.Mesh(new THREE.CircleGeometry(2.7,28),
+    new THREE.MeshBasicMaterial({map:GLOW_TEX,color:0xff8f3a,transparent:true,opacity:0,
+      blending:THREE.AdditiveBlending,depthWrite:false}));
+  pool.rotation.x=-Math.PI/2; pool.position.y=0.03; pool.renderOrder=4;
+  grp.add(pool);
+  var smolder=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW_TEX,color:0xff7a26,
+    transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,depthWrite:false}));
+  smolder.scale.set(0.34,0.34,1); smolder.position.y=0.42;
+  grp.add(smolder);
+  scene.add(grp);
+  bfViews.push({grp:grp,flame:flame.points,fire:flame,light:light,pool:pool,smolder:smolder,seed:i*1.7});
+});
+function syncBonfireViews(){
+  for(var i=0;i<bfViews.length;i++){
+    var b=bonfires[i], lit=b&&b.lit;
+    if(b) bfViews[i].grp.position.set(X3(b.x),0,Z3(b.y));
+    bfViews[i].flame.visible=!!lit;
+    bfViews[i].smolder.visible=!lit;
+  }
+}
+
+/* ---------------- the bearer ---------------- */
+var bearerTex=bearerAtlas();
+/* Basic material with a hand-driven warm tint: the bearer is lit by his
+   own torch in the view sync, so he can never render as a black blob */
+var bearerMat=new THREE.MeshBasicMaterial({map:bearerTex,alphaTest:0.4,side:THREE.DoubleSide});
+var bearerGeo=new THREE.PlaneGeometry(1.5,1.92); bearerGeo.translate(0,0.96,0);
+var bearer=new THREE.Mesh(bearerGeo,bearerMat);
+bearer.rotation.y=Math.PI/4;
+scene.add(bearer);
+var torchFlame=makeFlame(0.95,1.6,0.53);
+scene.add(torchFlame);
+var torchLight=new THREE.PointLight(0xffa845,1.5,17,1.6);
+scene.add(torchLight);
+var playerPool=new THREE.Mesh(new THREE.CircleGeometry(3.5,28),
+  new THREE.MeshBasicMaterial({map:GLOW_TEX,color:0xff9a40,transparent:true,opacity:0.30,
+    blending:THREE.AdditiveBlending,depthWrite:false}));
+playerPool.rotation.x=-Math.PI/2; playerPool.position.y=0.025; playerPool.renderOrder=3;
+scene.add(playerPool);
+var CAM_RIGHT=new THREE.Vector3(Math.SQRT1_2,0,-Math.SQRT1_2);
+function torchTipWorld(){
+  var bx=X3(player.x), bz=Z3(player.y);
+  return { x: bx + CAM_RIGHT.x*(player.dir*0.34), z: bz + CAM_RIGHT.z*(player.dir*0.34), y: 1.30 };
+}
+
+/* ---------------- title-screen dressing ----------------
+   Two tall side flames and one broad center flame around the spawn
+   clearing, floating embers (in the particle system), all mirroring
+   the 2D title. Visible only on the title state. */
+var titleFx=new THREE.Group();
+(function buildTitleFx(){
+  var sx=X3(SPAWN.x), sz=Z3(SPAWN.y);
+  var defs=[
+    {off:-7.7, tex:wallCvL.tex, w:3.9, h:21.0, seed:2.11, pool:3.1, fwd:14.5, wall:-1},
+    {off: 7.7, tex:wallCvR.tex, w:3.9, h:21.0, seed:3.77, pool:3.1, fwd:14.5, wall:1},
+    {off: 0.0, tex:centerCv.tex, w:3.7, h:3.5, seed:5.03, pool:3.5, fwd:5.6}
+  ];
+  titleFx.userData.items=[];
+  titleFx.userData.walls=[];
+  defs.forEach(function(d){
+    var fx=sx+CAM_RIGHT.x*d.off, fz=sz+CAM_RIGHT.z*d.off;
+    if(d.fwd){ fx+=(0.7071)*d.fwd; fz+=(0.7071)*d.fwd; }
+    if(d.wall) titleFx.userData.walls.push({x:fx/0.02+1300, y:fz/0.02+900, side:d.wall});
+    var fl=canvasFlameMesh(d.tex,d.w,d.h);
+    fl.position.set(fx,0.02,fz);
+    titleFx.add(fl);
+    var pool=new THREE.Mesh(new THREE.CircleGeometry(d.pool,28),
+      new THREE.MeshBasicMaterial({map:GLOW_TEX,color:0xff8f3a,transparent:true,opacity:0.4,
+        blending:THREE.AdditiveBlending,depthWrite:false}));
+    pool.rotation.x=-Math.PI/2; pool.position.set(fx,0.03,fz); pool.renderOrder=4;
+    titleFx.add(pool);
+    var li=new THREE.PointLight(0xff8f3a,1.15,14,1.7);
+    li.position.set(fx,1.9,fz);
+    titleFx.add(li);
+    titleFx.userData.items.push({seed:d.seed,pool:pool});
+  });
+  scene.add(titleFx);
+})();
+
+/* ---------------- moth & wisp views ---------------- */
+var mothTex=mothTexture();
+function makeMothView(){
+  var grp=new THREE.Group();
+  var body=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.46),
+    new THREE.MeshBasicMaterial({map:mothTex,alphaTest:0.3,side:THREE.DoubleSide,color:0x9aa0b5}));
+  body.geometry.translate(0,0.23,0);
+  body.rotation.y=Math.PI/4;
+  var eyes=new THREE.Mesh(new THREE.PlaneGeometry(0.30,0.13),
+    new THREE.MeshBasicMaterial({map:GLOW_TEX,color:0xff4422,transparent:true,opacity:0.85,
+      blending:THREE.AdditiveBlending,depthWrite:false}));
+  eyes.geometry.translate(0,0.10,0);
+  eyes.rotation.y=Math.PI/4;
+  eyes.position.set(0.03,0.20,0.03);
+  grp.add(body); grp.add(eyes);
+  grp.visible=false;
+  scene.add(grp);
+  return {grp:grp,body:body,eyes:eyes};
+}
+var mothViews=[];
+function makeWispView(){
+  var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW_TEX,color:0xffb347,
+    transparent:true,opacity:0.95,blending:THREE.AdditiveBlending,depthWrite:false}));
+  sp.scale.set(0.55,0.55,1);
+  sp.visible=false;
+  scene.add(sp);
+  return sp;
+}
+var wispViews=[];
+
+/* ---------------- particle system (custom points shader) ---------------- */
+var PMAX=1500;
+var pGeo=new THREE.BufferGeometry();
+var pPos=new Float32Array(PMAX*3), pCol=new Float32Array(PMAX*3),
+    pSize=new Float32Array(PMAX), pAlp=new Float32Array(PMAX);
+pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+pGeo.setAttribute('aColor',new THREE.BufferAttribute(pCol,3));
+pGeo.setAttribute('aSize',new THREE.BufferAttribute(pSize,1));
+pGeo.setAttribute('aAlpha',new THREE.BufferAttribute(pAlp,1));
+var pUniforms={ uPxPerUnit:{value:600/VIEW_H} };
+var pMat=new THREE.ShaderMaterial({
+  uniforms:pUniforms,
+  vertexShader:[
+    'attribute vec3 aColor; attribute float aSize; attribute float aAlpha;',
+    'varying vec3 vC; varying float vA;',
+    'uniform float uPxPerUnit;',
+    'void main(){ vC=aColor; vA=aAlpha;',
+    '  vec4 mv=modelViewMatrix*vec4(position,1.0);',
+    '  gl_PointSize=aSize*uPxPerUnit;',
+    '  gl_Position=projectionMatrix*mv; }'
+  ].join('\n'),
+  fragmentShader:[
+    'precision highp float;',
+    'varying vec3 vC; varying float vA;',
+    'void main(){',
+    '  float d=length(gl_PointCoord-vec2(0.5));',
+    '  float a=smoothstep(0.5,0.06,d)*vA;',
+    '  if(a<0.004) discard;',
+    '  gl_FragColor=vec4(vC*a,a);',
+    '  #include <tonemapping_fragment>',
+    '  #include <encodings_fragment>',
+    '}'
+  ].join('\n'),
+  transparent:true, depthWrite:false, blending:THREE.AdditiveBlending
+});
+var pPoints=new THREE.Points(pGeo,pMat);
+pPoints.frustumCulled=false;
+pPoints.renderOrder=25;
+scene.add(pPoints);
+
+/* ---------------- pointer steering ---------------- */
+var raycaster=new THREE.Raycaster();
+var groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+var ndc=new THREE.Vector2(), hitP=new THREE.Vector3();
+function pointerGround(e){
+  ndc.x=(e.clientX/innerWidth)*2-1;
+  ndc.y=-(e.clientY/innerHeight)*2+1;
+  raycaster.setFromCamera(ndc,camera);
+  if(raycaster.ray.intersectPlane(groundPlane,hitP)){
+    return { x: hitP.x/S+WORLD_W/2, y: hitP.z/S+WORLD_H/2 };
+  }
+  return null;
+}
+var pointerHeld=false;
+renderer.domElement.addEventListener('pointerdown',function(e){
+  audioInit(); if(AC&&AC.state==='suspended')AC.resume();
+  if(state!=='play') return;
+  pointerHeld=true;
+  touchTarget=pointerGround(e);
+});
+addEventListener('pointermove',function(e){ if(pointerHeld) touchTarget=pointerGround(e); });
+addEventListener('pointerup',function(){ pointerHeld=false; touchTarget=null; });
+document.getElementById('title').addEventListener('click',function(){
+  audioInit(); if(state==='title') startRun();
+});
+document.getElementById('optNormal').addEventListener('click',function(e){
+  e.stopPropagation();
+  if(state==='title'){ audioInit(); setDifficulty('normal'); sfx('click'); }
+});
+document.getElementById('optHard').addEventListener('click',function(e){
+  e.stopPropagation();
+  if(state==='title'){ audioInit(); setDifficulty('hard'); sfx('click'); }
+});
+document.getElementById('end').addEventListener('click',function(){
+  if(state==='win'||state==='lose') toTitle();
+});
+
+addEventListener('resize',function(){
+  renderer.setSize(innerWidth,innerHeight);
+  frameCamera();
+  pUniforms.uPxPerUnit.value=innerHeight/VIEW_H;
+});
+pUniforms.uPxPerUnit.value=innerHeight/VIEW_H;
+
+/* =====================================================================
+   GAME LOGIC — mirrored from the 2D EMBERWAKE
+   ===================================================================== */
 function tryDash(){
   if(dashCD>0||flame<=2) return false;
   flame=Math.max(0,flame-7);
   dashCD=0.42; flareT=0.38;
-  var dx=0,dy=0;
-  if(keyDown('a','arrowleft'))dx-=1; if(keyDown('d','arrowright'))dx+=1;
-  if(keyDown('w','arrowup'))dy-=1; if(keyDown('s','arrowdown'))dy+=1;
-  if(touchMove){ var tx=cam.x+touchMove.x, ty=cam.y+touchMove.y; dx=tx-player.x; dy=ty-player.y; }
+  var ix2=0, iy2=0;
+  if(keyDown('a','arrowleft'))ix2-=1; if(keyDown('d','arrowright'))ix2+=1;
+  if(keyDown('w','arrowup'))iy2-=1; if(keyDown('s','arrowdown'))iy2+=1;
+  var dx=(ix2+iy2)*0.7071, dy=(iy2-ix2)*0.7071;
+  if(touchTarget){ dx=touchTarget.x-player.x; dy=touchTarget.y-player.y; }
   if(dx===0&&dy===0){ dx=player.dir; dy=0; }
   var l=Math.hypot(dx,dy)||1;
   player.impX=dx/l*305; player.impY=dy/l*305;
@@ -376,61 +1096,136 @@ function tryDash(){
 }
 function igniteBonfire(b){
   b.lit=true; litCount++;
-  flame=100;
+  /* HARD: lighting a pyre does NOT refuel you — only kindling wisps do */
+  if(difficulty!=='hard') flame=100;
   addScore(500);
-  emberBurst(b.x,b.y-14,130,true);
-  rings.push({x:b.x,y:b.y-10,r:12,a:0.85});
-  flashA=0.55;
+  emberBurst(b.x,b.y,130,true);
+  spawnFireRing(b.x,b.y);
+  flashVal=0.30;
+  var bfv=bfViews[bonfires.indexOf(b)]; if(bfv) bfv.flash=1;
   sfx('ignite');
-  /* the ignition flare burns any moths close by */
+  showMsg('BONFIRE LIT — '+litCount+' OF 7',2.4);
   for(var i=moths.length-1;i>=0;i--){
     if(dist(moths[i].x,moths[i].y,b.x,b.y)<110){
       emberBurst(moths[i].x,moths[i].y,10,false); addScore(40); moths.splice(i,1);
     }
   }
-  if(litCount>=7){ state='win'; finalScore=score; if(score>hiScore){ hiScore=score; saveHi(); } sfx('dawn'); }
+  syncBonfireViews();
+  if(litCount>=7){
+    state='win'; finalScore=score;
+    if(score>hiScore){ hiScore=score; saveHi(); }
+    sfx('dawn');
+    var et=document.getElementById('end');
+    document.getElementById('endTitle').textContent='DAWN BREAKS';
+    document.getElementById('endText').textContent=
+      'All seven bonfires burn against the night. The drowned kingdom wakes in gold. FINAL SCORE '+finalScore;
+    et.classList.remove('hidden');
+    flareBtn.style.display='none';
+    renderer.setClearColor(0x241a20,1);
+  }
 }
 function gameOver(){
   state='lose'; finalScore=score;
   if(score>hiScore){ hiScore=score; saveHi(); }
-  for(var i=0;i<14;i++) spawnP({kind:'smoke',x:player.x+player.dir*13,y:player.y-34,
-    vx:-8+Math.random()*16,vy:-16-Math.random()*14,life:0,max:1.4+Math.random(),size:3,seed:Math.random()*10});
+  emberBurst(player.x,player.y,26,false);
   sfx('gutter');
+  var et=document.getElementById('end');
+  document.getElementById('endTitle').textContent='THE FLAME GUTTERS OUT';
+  document.getElementById('endText').textContent=
+    'The dark keeps the kingdom for another night. Bonfires lit: '+litCount+' of 7. FINAL SCORE '+finalScore;
+  et.classList.remove('hidden');
+  flareBtn.style.display='none';
 }
-function startRun(){ reset(); state='play'; sfx('click'); }
-function handleTap(p){
-  audioInit();
-  if(state==='title'){ startRun(); startTapPos=p; }
-  else if(state==='win'||state==='lose'){ state='title'; }
+var emitAcc={};
+function emitAmbientEmbers(dt){
+  /* the title's drifting, glowing, fading embers — kept alive in play
+     so the dark and the tiles never sit still */
+  emitAcc.ambPlay=(emitAcc.ambPlay||0)+16*dt;
+  while(emitAcc.ambPlay>=1){ emitAcc.ambPlay--;
+    var hero=Math.random()<0.14;
+    spawnP({kind:'title',x:player.x+(Math.random()-0.5)*1020,y:player.y+(Math.random()-0.5)*700,
+      h:5+Math.random()*150,vx:-6+Math.random()*12,vy:(Math.random()-0.5)*6,vh:8+Math.random()*13,
+      life:0,max:3.0+Math.random()*2.4,size:hero?0.13:0.06+Math.random()*0.035,seed:Math.random()*10,
+      cr:1.0,cg:0.62,cb:0.2,a0:hero?0.5:0.66});
+  }
 }
-
-/* ============================== UPDATE ============================== */
+function emitTorchFx(dt){
+  emitAmbientEmbers(dt);
+  var ff=flame/100;
+  var tipx=player.x+player.dir*13;
+  emitAcc.emb=(emitAcc.emb||0)+(10+26*ff+(flareT>0?60:0))*dt;
+  while(emitAcc.emb>=1){ emitAcc.emb--;
+    spawnP({kind:'ember',x:tipx+(Math.random()-0.5)*6,y:player.y+(Math.random()-0.5)*6,h:52,
+      vx:(Math.random()-0.5)*14,vy:(Math.random()-0.5)*8,vh:34+Math.random()*40,
+      life:0,max:0.8+Math.random()*1.3,size:0.045+Math.random()*0.03,seed:Math.random()*10,
+      cr:1.0,cg:0.62,cb:0.22,a0:0.9}); }
+  emitAcc.flm=(emitAcc.flm||0)+130*ff*dt;
+  while(emitAcc.flm>=1){ emitAcc.flm--;
+    spawnP({kind:'flame',x:tipx+(Math.random()-0.5)*5,y:player.y+(Math.random()-0.5)*5,h:50,
+      vx:(Math.random()-0.5)*8,vy:(Math.random()-0.5)*6,vh:55+Math.random()*45,
+      life:0,max:0.3+Math.random()*0.25,size:0.13+Math.random()*0.09,seed:Math.random()*10,
+      cr:1.0,cg:0.55,cb:0.16,a0:0.5}); }
+  if(flareT>0){
+    emitAcc.trl=(emitAcc.trl||0)+250*dt;
+    while(emitAcc.trl>=1){ emitAcc.trl--;
+      spawnP({kind:'trail',x:player.x+(Math.random()-0.5)*16,y:player.y+(Math.random()-0.5)*16,
+        h:8+Math.random()*36,vx:(Math.random()-0.5)*20,vy:(Math.random()-0.5)*14,vh:16+Math.random()*20,
+        life:0,max:0.5+Math.random()*0.45,size:0.15+Math.random()*0.13,seed:Math.random()*10,
+        cr:1.0,cg:0.5,cb:0.14,a0:0.65}); }
+  }
+  for(var i=0;i<bonfires.length;i++){
+    var b=bonfires[i]; if(!b.lit) continue;
+    b.eacc=(b.eacc||0)+26*dt;
+    while(b.eacc>=1){ b.eacc--;
+      spawnP({kind:'ember',x:b.x+(Math.random()-0.5)*16,y:b.y+(Math.random()-0.5)*16,h:24,
+        vx:(Math.random()-0.5)*10,vy:(Math.random()-0.5)*8,vh:40+Math.random()*42,
+        life:0,max:1+Math.random()*1.4,size:0.06+Math.random()*0.045,seed:Math.random()*10,
+        cr:1.0,cg:0.6,cb:0.2,a0:0.9}); }
+  }
+}
+function simParticles(dt){
+  for(var i=parts.length-1;i>=0;i--){
+    var p=parts[i];
+    p.life+=dt;
+    if(p.life>=p.max){ parts.splice(i,1); continue; }
+    if(p.kind==='burst'){
+      var damp=Math.pow(0.12,dt);
+      p.vx*=damp; p.vy*=damp; p.vh=p.vh*damp-26*dt;
+    } else if(p.kind==='ember'){
+      p.vh-=9*dt;
+      p.vx+=wind.strength*wind.dir*26*dt;
+    } else if(p.kind==='flame'){
+      p.vx+=wind.strength*wind.dir*70*dt;
+    }
+    p.x+=p.vx*dt; p.y+=p.vy*dt; p.h=Math.max(1,p.h+p.vh*dt);
+  }
+}
 function update(dt){
   timeG+=dt;
-  updateParts(dt);
-  if(flashA>0) flashA=Math.max(0,flashA-dt*0.8);
-  /* title/win/lose ambience: flames still breathe */
-  if(state==='win'&&dawnT<1) dawnT=Math.min(1,dawnT+dt/3.2);
-  if(state!=='play'||paused) return;
+  simParticles(dt);
+  if(msgT>0){ msgT-=dt; if(msgT<=0) document.getElementById('msg').style.opacity=0; }
+  if(state!=='play'||paused){ emitTitleFx(dt); return; }
   runTime+=dt;
 
-  /* --- movement --- */
-  var dx=0,dy=0;
-  if(keyDown('a','arrowleft'))dx-=1; if(keyDown('d','arrowright'))dx+=1;
-  if(keyDown('w','arrowup'))dy-=1; if(keyDown('s','arrowdown'))dy+=1;
-  if(touchMove){
-    var wx=cam.x+touchMove.x, wy=cam.y+touchMove.y;
-    var tdx=wx-player.x, tdy=wy-player.y;
+  /* movement — keys are CAMERA-relative (screen space), rotated 45 degrees
+     into world space: in iso view the world axes sit diagonal to the
+     screen, so raw world-axis input collapses diagonals on screen */
+  var ix=0, iy=0;
+  if(keyDown('a','arrowleft'))ix-=1; if(keyDown('d','arrowright'))ix+=1;
+  if(keyDown('w','arrowup'))iy-=1; if(keyDown('s','arrowdown'))iy+=1;
+  var dx=(ix+iy)*0.7071, dy=(iy-ix)*0.7071;
+  if(ix!==0) player.dir=ix;
+  if(touchTarget){
+    var tdx=touchTarget.x-player.x, tdy=touchTarget.y-player.y;
     if(Math.hypot(tdx,tdy)>14){ dx=tdx; dy=tdy; } else { dx=0; dy=0; }
   }
   var dl=Math.hypot(dx,dy);
-  if(dl>0){ dx/=dl; dy/=dl; player.dir=dx<-0.2?-1:(dx>0.2?1:player.dir); player.walk+=dt*9; }
+  if(dl>0){ dx/=dl; dy/=dl; player.walk+=dt*9; }
   var SPEED=168;
   player.vx=dx*SPEED; player.vy=dy*SPEED;
   player.x+=(player.vx+player.impX)*dt;
   player.y+=(player.vy+player.impY)*dt;
   var impDecay=Math.exp(-6*dt); player.impX*=impDecay; player.impY*=impDecay;
-  /* pillar collision: circle vs rect, push out on the smaller axis */
   for(var pi=0;pi<PILLARS.length;pi++){
     var pr=PILLARS[pi];
     var nx=clamp(player.x,pr.x,pr.x+PILLAR_W), ny=clamp(player.y,pr.y,pr.y+PILLAR_H);
@@ -443,12 +1238,12 @@ function update(dt){
   player.x=clamp(player.x,16,WORLD_W-16);
   player.y=clamp(player.y,16,WORLD_H-16);
   if(dl>0) addScore(SPEED*dt*0.055);
-  /* dash input */
   dashCD=Math.max(0,dashCD-dt);
   flareT=Math.max(0,flareT-dt);
   if(keyHit(' ','shift')||touchFlare) tryDash();
 
-  /* --- wind state machine --- */
+  /* wind */
+  var prevPhase=wind.phase;
   wind.t-=dt;
   if(wind.phase==='calm'&&wind.t<=0){ wind.phase='telegraph'; wind.t=1.6; wind.dir=Math.random()<0.5?-1:1; }
   else if(wind.phase==='telegraph'&&wind.t<=0){ wind.phase='gust'; wind.t=3+Math.random()*1.2; }
@@ -456,16 +1251,18 @@ function update(dt){
   if(wind.phase==='gust') wind.strength=Math.min(1,wind.strength+dt*1.4);
   else if(wind.phase==='telegraph') wind.strength=Math.min(0.25,wind.strength+dt*0.2);
   else wind.strength=Math.max(0,wind.strength-dt*2);
+  if(prevPhase==='calm'&&wind.phase==='telegraph') showMsg('THE WIND RISES — FIND SHELTER',1.8);
   sheltered=isSheltered()&&wind.strength>0.3;
+  if(sheltered&&wind.phase==='gust'&&msgT<=0) showMsg('SHELTERED',0.4);
 
-  /* --- flame burn --- */
+  /* flame burn */
   inDrizzle=inDrizzleAt(player.x,player.y);
   var burn=0.5;
   if(inDrizzle) burn*=2.2;
-  if(wind.strength>0.3&&!sheltered) burn*= (1+2.4*wind.strength);
-  flame-=burn*dt;
+  if(wind.strength>0.3&&!sheltered) burn*=(1+2.4*wind.strength);
+  flame-=burn*(difficulty==='hard'?2.7:1)*dt;
 
-  /* --- moths --- */
+  /* moths */
   mothTimer-=dt;
   var spawnEvery=Math.max(1.35,3.1-litCount*0.28);
   if(mothTimer<=0){ spawnMoth(); mothTimer=spawnEvery*(0.75+Math.random()*0.5); }
@@ -476,9 +1273,8 @@ function update(dt){
     var wob=Math.sin(timeG*2.1+m.ph)*22;
     m.x+=(mdx/md*m.sp + Math.cos(m.ph+timeG*1.7)*wob*0.3)*dt + wind.strength*wind.dir*26*dt;
     m.y+=(mdy/md*m.sp + Math.sin(m.ph+timeG*2.3)*wob*0.3)*dt;
-    m.latched = md<24;
-    if(m.latched&&latched<2){ latched++; flame-=7*dt; }
-    /* dash-flare burns moths inside the eruption */
+    m.latched=md<24;
+    if(m.latched&&latched<2){ latched++; flame-=(difficulty==='hard'?11:7)*dt; }
     if(flareT>0&&dist(m.x,m.y,player.x,player.y-10)<84){
       m.burn+=dt;
       if(m.burn>0.09){
@@ -488,9 +1284,9 @@ function update(dt){
     } else m.burn=Math.max(0,m.burn-dt*2);
   }
 
-  /* --- kindling pickups --- */
+  /* kindling */
   for(var wi=wisps.length-1;wi>=0;wi--){
-    var w=wipsGet(wi);
+    var w=wisps[wi];
     if(dist(w.x,w.y,player.x,player.y)<27){
       flame=Math.min(100,flame+14);
       addScore(25);
@@ -500,755 +1296,239 @@ function update(dt){
     }
   }
   wispTimer-=dt;
-  if(wispTimer<=0){ if(wisps.length<26) spawnWisp(false); wispTimer=2.5; }
+  if(wispTimer<=0){ if(wisps.length<(difficulty==='hard'?17:26)) spawnWisp(false); wispTimer=(difficulty==='hard'?4.0:2.5); }
 
-  /* --- bonfires --- */
+  /* bonfires */
   for(var bi=0;bi<bonfires.length;bi++){
     var b=bonfires[bi];
     if(!b.lit&&flame>=22&&dist(b.x,b.y,player.x,player.y)<36) igniteBonfire(b);
   }
 
-  /* --- torch particle emission --- */
-  emitTorch(dt);
+  emitTorchFx(dt);
 
-  /* --- camera --- */
-  var tcx=clamp(player.x-W/2,0,WORLD_W-W), tcy=clamp(player.y-H/2,0,WORLD_H-H);
-  cam.x+=(tcx-cam.x)*Math.min(1,dt*7); cam.y+=(tcy-cam.y)*Math.min(1,dt*7);
-
-  /* --- audio beds follow the action --- */
+  /* audio beds + random fire pops close to the torch */
   if(AC&&!muted){
     var ff=flame/100;
     if(rumbleGain) rumbleGain.gain.value=0.05+0.1*ff+(flareT>0?0.12:0);
     if(crackleGain) crackleGain.gain.value=(0.02+0.07*ff)*(0.7+0.6*Math.random());
     if(windGain) windGain.gain.value=wind.phase==='telegraph'?0.05+0.05*(1.6-wind.t)/1.6 : wind.strength*0.16;
+    if(Math.random()<dt*2.4) noiseBurst(0.05,1700+Math.random()*1500,900,0.09,'bandpass');
   }
 
-  /* --- death --- */
   if(flame<=0){ flame=0; gameOver(); }
-}
-function wipsGet(i){ return wisps[i]; }
-function emitTorch(dt){
-  var tip=torchTip();
-  var ff=flame/100, rate=perfScale;
-  /* layered flame particles: white-yellow core, orange mid, deep red outer */
-  var nCore=110*ff*rate, nMid=70*ff*rate, nOut=44*ff*rate;
-  emitAcc.core=(emitAcc.core||0)+nCore*dt;
-  emitAcc.mid=(emitAcc.mid||0)+nMid*dt;
-  emitAcc.out=(emitAcc.out||0)+nOut*dt;
-  while(emitAcc.core>=1){ emitAcc.core--;
-    spawnP({kind:'flame',tier:0,x:tip.x+(Math.random()-0.5)*4,y:tip.y+2,
-      vx:(Math.random()-0.5)*9,vy:-52-Math.random()*30,life:0,max:0.26+Math.random()*0.2,
-      size:2.4+Math.random()*1.8,seed:Math.random()*10}); }
-  while(emitAcc.mid>=1){ emitAcc.mid--;
-    spawnP({kind:'flame',tier:1,x:tip.x+(Math.random()-0.5)*7,y:tip.y+3,
-      vx:(Math.random()-0.5)*12,vy:-44-Math.random()*26,life:0,max:0.36+Math.random()*0.24,
-      size:3.4+Math.random()*2.4,seed:Math.random()*10}); }
-  while(emitAcc.out>=1){ emitAcc.out--;
-    spawnP({kind:'flame',tier:2,x:tip.x+(Math.random()-0.5)*10,y:tip.y+4,
-      vx:(Math.random()-0.5)*15,vy:-34-Math.random()*22,life:0,max:0.46+Math.random()*0.3,
-      size:4.6+Math.random()*3,seed:Math.random()*10}); }
-  /* ember sparks shed upward, drifting with the wind */
-  emitAcc.emb=(emitAcc.emb||0)+(10+26*ff+(flareT>0?60:0))*rate*dt;
-  while(emitAcc.emb>=1){ emitAcc.emb--;
-    spawnP({kind:'ember',x:tip.x+(Math.random()-0.5)*6,y:tip.y-4,
-      vx:(Math.random()-0.5)*14,vy:-30-Math.random()*36,life:0,max:0.8+Math.random()*1.3,
-      size:0.9+Math.random()*1.3,seed:Math.random()*10}); }
-  /* dash trail: lingering swirling fire */
-  if(flareT>0){
-    emitAcc.trl=(emitAcc.trl||0)+260*rate*dt;
-    while(emitAcc.trl>=1){ emitAcc.trl--;
-      spawnP({kind:'trail',x:player.x+(Math.random()-0.5)*16,y:player.y-14+(Math.random()-0.5)*22,
-        vx:(Math.random()-0.5)*20,vy:-12-Math.random()*18,life:0,max:0.5+Math.random()*0.45,
-        size:3+Math.random()*3.4,seed:Math.random()*10}); }
-  }
-  /* low flame: sputter smoke */
-  if(flame<28&&Math.random()<dt*7){
-    spawnP({kind:'smoke',x:tip.x,y:tip.y-6,vx:(Math.random()-0.5)*10,vy:-20-Math.random()*10,
-      life:0,max:1.1+Math.random()*0.7,size:2.6,seed:Math.random()*10});
-  }
-}
-var emitAcc={};
-
-/* ============================== RENDER ============================== */
-/* prerendered ground */
-var worldCv=document.createElement('canvas'); worldCv.width=WORLD_W; worldCv.height=WORLD_H;
-(function paintWorld(){
-  var g=worldCv.getContext('2d');
-  var grad=g.createLinearGradient(0,0,0,WORLD_H);
-  grad.addColorStop(0,'#0a0f1e'); grad.addColorStop(0.5,'#0a1216'); grad.addColorStop(1,'#0c0f1a');
-  g.fillStyle=grad; g.fillRect(0,0,WORLD_W,WORLD_H);
-  /* stone tile floor — big worn slabs in running bond over a grout bed;
-     the firelight reveals them near the bearer and they fade out with
-     distance through the darkness layer */
-  g.fillStyle='#0b0b10'; g.fillRect(0,0,WORLD_W,WORLD_H);
-  var TS=64;
-  g.globalAlpha=0.88;
-  for(var ty2=0;ty2<WORLD_H/TS;ty2++){
-    var toff=(ty2%2)*TS/2;
-    for(var tx2=-1;tx2<WORLD_W/TS+1;tx2++){
-      var x0=tx2*TS+toff, y0=ty2*TS;
-      var tv=((srand()*12-6)|0), rust=srand()<0.30, dk=srand()<0.14;
-      var cr=38+tv-(dk?9:0), cg=34+tv-(dk?8:0), cb=33+tv-(dk?7:0);
-      if(rust){ cr+=13; cg-=1; cb-=5; }
-      g.fillStyle='rgb('+cr+','+cg+','+cb+')';
-      g.fillRect(x0+2,y0+2,TS-4,TS-4);
-      g.fillStyle='rgba(255,190,150,0.04)'; g.fillRect(x0+2,y0+2,TS-4,3);
-      g.fillStyle='rgba(0,0,0,0.16)'; g.fillRect(x0+2,y0+TS-5,TS-4,3);
-      if(srand()<0.30){
-        g.strokeStyle='rgba(0,0,0,0.18)'; g.lineWidth=1;
-        var kx=x0+8+srand()*40, ky=y0+8+srand()*40;
-        g.beginPath(); g.moveTo(kx,ky); g.lineTo(kx+6+srand()*10,ky+4+srand()*8); g.stroke();
-      }
-    }
-  }
-  g.globalAlpha=1;
-  /* flooded patches */
-  for(var i=0;i<130;i++){
-    var x=srand()*WORLD_W, y=srand()*WORLD_H, r=26+srand()*90;
-    g.fillStyle='rgba(16,34,54,'+(0.12+srand()*0.2)+')';
-    g.beginPath(); g.ellipse(x,y,r,r*0.55,srand()*3,0,6.29); g.fill();
-  }
-  /* drowned stone slabs / ruins floor */
-  for(var j=0;j<260;j++){
-    var sx=srand()*WORLD_W, sy=srand()*WORLD_H, sw=14+srand()*44;
-    g.fillStyle='rgba(90,100,118,'+(0.05+srand()*0.09)+')';
-    g.fillRect(sx,sy,sw,sw*0.6);
-  }
-  /* grass / reed tufts */
-  for(var k=0;k<900;k++){
-    g.strokeStyle='rgba(38,66,48,'+(0.25+srand()*0.4)+')';
-    g.lineWidth=1.4;
-    var tx=srand()*WORLD_W, ty=srand()*WORLD_H;
-    g.beginPath(); g.moveTo(tx,ty); g.lineTo(tx+(srand()*8-4),ty-4-srand()*6); g.stroke();
-  }
-  /* the pilgrim path between bonfires */
-  g.strokeStyle='rgba(120,104,74,0.16)'; g.lineWidth=26; g.lineCap='round';
-  g.beginPath(); g.moveTo(SPAWN.x,SPAWN.y);
-  BONFIRES.forEach(function(b){ g.lineTo(b.x,b.y); });
-  g.stroke();
-  g.strokeStyle='rgba(150,130,90,0.10)'; g.lineWidth=10;
-  g.beginPath(); g.moveTo(SPAWN.x,SPAWN.y);
-  BONFIRES.forEach(function(b){ g.lineTo(b.x,b.y); });
-  g.stroke();
-})();
-/* ---- torchbearer sprite atlas (baked at boot, no external assets) ----
-   4 frames of 56x72: 0 idle · 1 walk A · 2 walk B · 3 dash.
-   Cell origin: feet/shadow line at (28,60); the torch head sits at
-   (41,22) so the flame the engine draws at torchTip() lands on it. */
-var bearerCv=document.createElement('canvas'); bearerCv.width=224; bearerCv.height=72;
-(function paintBearer(){
-  var g=bearerCv.getContext('2d');
-  var CFG=[
-    {bootL:[-4,0], bootR:[5,0],  sway:0,  hemL:-10, hemR:10, hemY:59, hoodX:0, hand:[10,-22], sash:-0.5},
-    {bootL:[9,-3], bootR:[-8,0], sway:-3, hemL:-13, hemR:7,  hemY:59, hoodX:0, hand:[10,-22], sash:-0.5},
-    {bootL:[-8,0], bootR:[9,-3], sway:3,  hemL:-7,  hemR:13, hemY:59, hoodX:0, hand:[10,-22], sash:-0.5},
-    {bootL:[-9,-2],bootR:[-4,-4],sway:0,  hemL:-17, hemR:3,  hemY:53, hoodX:3, hand:[13,-23], sash:-0.9}
-  ];
-  for(var f=0;f<4;f++){
-    var c=CFG[f];
-    g.save(); g.translate(f*56+28,60);
-    /* boots */
-    g.fillStyle='#0b0d16';
-    g.beginPath(); g.ellipse(c.bootL[0],-1.5+c.bootL[1],4.2,2.4,0,0,6.29); g.fill();
-    g.beginPath(); g.ellipse(c.bootR[0],-1.5+c.bootR[1],4.2,2.4,0,0,6.29); g.fill();
-    /* cloak */
-    var cg=g.createLinearGradient(0,-30,0,0);
-    cg.addColorStop(0,'#2b3763'); cg.addColorStop(1,'#161c33');
-    g.fillStyle=cg;
-    g.beginPath();
-    g.moveTo(-6,-27); g.lineTo(7,-27);
-    g.lineTo(c.hemR,c.hemY-60); g.lineTo(c.hemL,c.hemY-60);
-    g.closePath(); g.fill();
-    g.strokeStyle='rgba(255,140,50,0.35)'; g.lineWidth=1.5;
-    g.beginPath(); g.moveTo(c.hemL,c.hemY-60); g.lineTo(c.hemR,c.hemY-60); g.stroke();
-    /* sash */
-    g.save(); g.translate(0,-17); g.rotate(c.sash);
-    g.fillStyle='#a34d16'; g.fillRect(-8,-2,16,4); g.restore();
-    /* hood + shadowed face, warm rim on the torch side */
-    g.fillStyle='#303c6a';
-    g.beginPath(); g.arc(c.hoodX,-30,8.2,0,6.29); g.fill();
-    g.fillStyle='#06070e';
-    g.beginPath(); g.arc(c.hoodX+2,-29,4.8,0,6.29); g.fill();
-    g.strokeStyle='rgba(255,176,92,0.5)'; g.lineWidth=1.2;
-    g.beginPath(); g.arc(c.hoodX,-30,8.2,-0.9,0.9); g.stroke();
-    /* arm to the torch hand */
-    g.strokeStyle='#232c50'; g.lineWidth=4; g.lineCap='round';
-    g.beginPath(); g.moveTo(5,-25); g.lineTo(c.hand[0],c.hand[1]); g.stroke();
-    /* torch haft + bound head (the flame itself is drawn by the engine) */
-    g.strokeStyle='#4a2f16'; g.lineWidth=3.6;
-    g.beginPath(); g.moveTo(c.hand[0],c.hand[1]); g.lineTo(13,-34); g.stroke();
-    g.fillStyle='#2c1c0c';
-    g.beginPath(); g.ellipse(13,-38,4.6,6.5,0,0,6.29); g.fill();
-    g.fillStyle='#ff9a3c';
-    g.beginPath(); g.arc(11,-40,0.9,0,6.29); g.fill();
-    g.beginPath(); g.arc(15,-35,0.9,0,6.29); g.fill();
-    g.restore();
-  }
-})();
-/* darkness / lighting layer */
-var lightCv=document.createElement('canvas'); lightCv.width=W; lightCv.height=H;
-var lctx=lightCv.getContext('2d');
-
-function drawFlameShape(x,y,h,w,lean,color,alpha){
-  ctx.globalAlpha=alpha;
-  ctx.fillStyle=color;
-  ctx.beginPath();
-  ctx.moveTo(x-w,y);
-  ctx.bezierCurveTo(x-w,y-h*0.45, x+lean-w*0.35,y-h*0.82, x+lean,y-h);
-  ctx.bezierCurveTo(x+lean+w*0.35,y-h*0.82, x+w,y-h*0.45, x+w,y);
-  ctx.closePath(); ctx.fill();
-  ctx.globalAlpha=1;
-}
-function flameBody(x,y,scale,lean,t){
-  var f=flick(t,5.7);
-  var h=40*scale*f, w=13*scale*(2-f)*0.9;
-  drawFlameShape(x,y,h,w,lean,'rgba(214,52,10,0.50)');
-  drawFlameShape(x,y,h*0.72,w*0.68,lean*0.8,'rgba(255,126,22,0.72)');
-  drawFlameShape(x,y,h*0.46,w*0.42,lean*0.6,'rgba(255,205,92,0.92)');
-  drawFlameShape(x,y,h*0.24,w*0.2,lean*0.4,'rgba(255,246,205,0.98)');
-}
-function drawSideFlame(x,t,phase){
-  /* ONE continuous wall of flame: a single rippling silhouette per color
-     layer, base at the bottom edge, tongues licking to near the top. */
-  var yBase=H+8, yTop=16, N=30;
-  var layers=[
-    {s:1.00, col:'rgba(214,52,10,0.50)', sp:1.00},
-    {s:0.74, col:'rgba(255,126,22,0.68)', sp:1.23},
-    {s:0.50, col:'rgba(255,205,92,0.85)', sp:1.47},
-    {s:0.28, col:'rgba(255,246,205,0.95)', sp:1.71}
-  ];
-  var pulse=1+0.09*Math.sin(t*0.7+phase*1.7)+0.05*Math.sin(t*1.9+phase);
-  for(var li=0;li<layers.length;li++){
-    var L=layers[li], tt=t*L.sp+phase+li*0.9;
-    ctx.fillStyle=L.col;
-    ctx.beginPath();
-    for(var i=0;i<=N;i++){
-      var f=i/N;
-      var y=yBase-(yBase-yTop)*f;
-      var hw=30*L.s*pulse*(1-0.52*f)*(1-0.30*f*f*f)*(0.85+0.15*Math.sin(tt*3.1+f*9.0))*(0.74+0.26*Math.sin(tt*5.3+f*22.0+li*1.3));
-      var sway=Math.sin(tt*2.1+f*5.2)*9*f+Math.sin(tt*4.7+f*13.0)*3.5*f;
-      if(i===0) ctx.moveTo(x-hw+sway,yBase); else ctx.lineTo(x-hw+sway,y);
-    }
-    for(var j=N;j>=0;j--){
-      var f2=j/N;
-      var y2=yBase-(yBase-yTop)*f2;
-      var hw2=30*L.s*pulse*(1-0.52*f2)*(1-0.30*f2*f2*f2)*(0.85+0.15*Math.sin(tt*3.1+f2*9.0+1.7))*(0.74+0.26*Math.sin(tt*5.3+f2*22.0+li*1.3+2.1));
-      var sway2=Math.sin(tt*2.1+f2*5.2)*9*f2+Math.sin(tt*4.7+f2*13.0)*3.5*f2;
-      ctx.lineTo(x+hw2+sway2,y2);
-    }
-    ctx.closePath(); ctx.fill();
-  }
-}
-function drawBigFlame(x,yBase,w,h,t,phase){
-  /* ONE grand flame: a single rippling silhouette per color layer, wide at
-     the base, with shorter hotter cores nested inside — no sprite shapes. */
-  var layers=[
-    {s:1.00, hf:1.00, col:'rgba(214,52,10,0.52)', sp:1.00},
-    {s:0.76, hf:0.80, col:'rgba(255,126,22,0.70)', sp:1.27},
-    {s:0.53, hf:0.58, col:'rgba(255,205,92,0.88)', sp:1.55},
-    {s:0.31, hf:0.36, col:'rgba(255,246,205,0.96)', sp:1.90}
-  ];
-  var N=24;
-  for(var li=0;li<layers.length;li++){
-    var L=layers[li], tt=t*L.sp+phase+li*0.85;
-    var hh=h*L.hf*(0.94+0.09*Math.sin(tt*2.3));
-    ctx.fillStyle=L.col;
-    ctx.beginPath();
-    for(var i=0;i<=N;i++){
-      var f=i/N;
-      var y=yBase-hh*f;
-      var prof=Math.pow(1-f,0.65)*(0.84+0.16*Math.sin(tt*3.4+f*8.0))*(0.80+0.20*Math.sin(tt*5.9+f*19.0+li*1.2));
-      var hw=w*0.5*L.s*prof;
-      var sway=Math.sin(tt*1.9+f*4.2)*10*f*f+Math.sin(tt*3.7+f*9.0)*4*f;
-      if(i===0) ctx.moveTo(x-hw+sway,yBase); else ctx.lineTo(x-hw+sway,y);
-    }
-    for(var j=N;j>=0;j--){
-      var f2=j/N;
-      var y2=yBase-hh*f2;
-      var prof2=Math.pow(1-f2,0.65)*(0.84+0.16*Math.sin(tt*3.4+f2*8.0+1.9))*(0.80+0.20*Math.sin(tt*5.9+f2*19.0+li*1.2+2.3));
-      var hw2=w*0.5*L.s*prof2;
-      var sway2=Math.sin(tt*1.9+f2*4.2)*10*f2*f2+Math.sin(tt*3.7+f2*9.0)*4*f2;
-      ctx.lineTo(x+hw2+sway2,y2);
-    }
-    ctx.closePath(); ctx.fill();
-  }
-}
-function punchLight(x,y,r,strength){
-  var gr=lctx.createRadialGradient(x,y,0,x,y,r);
-  gr.addColorStop(0,'rgba(0,0,0,'+strength+')');
-  gr.addColorStop(0.55,'rgba(0,0,0,'+(strength*0.55)+')');
-  gr.addColorStop(1,'rgba(0,0,0,0)');
-  lctx.fillStyle=gr;
-  lctx.fillRect(x-r,y-r,r*2,r*2);
-}
-function onScreen(x,y,m){ return x>cam.x-m&&x<cam.x+W+m&&y>cam.y-m&&y<cam.y+H+m; }
-
-function render(dt){
-  ctx.globalCompositeOperation='source-over';
-  ctx.globalAlpha=1;
-  /* ---- world ---- */
-  ctx.fillStyle='#04040c'; ctx.fillRect(0,0,W,H);
-  ctx.drawImage(worldCv,cam.x,cam.y,W,H,0,0,W,H);
-  /* drizzle zones: faint sheen + rain streaks */
-  for(var di=0;di<DRIZZLE.length;di++){
-    var dz=DRIZZLE[di]; if(!onScreen(dz.x,dz.y,dz.r)) continue;
-    var dsx=dz.x-cam.x, dsy=dz.y-cam.y;
-    ctx.fillStyle='rgba(90,130,190,0.07)';
-    ctx.beginPath(); ctx.ellipse(dsx,dsy,dz.r,dz.r*0.8,0,0,6.29); ctx.fill();
-    ctx.strokeStyle='rgba(150,190,240,0.20)'; ctx.lineWidth=1;
-    ctx.beginPath();
-    for(var rs=0;rs<14;rs++){
-      var rx=dsx+((rs*67+((timeG*260)%53))%dz.r)-dz.r/2, ry=dsy+((rs*97+((timeG*340)%71))%(dz.r*0.8))-dz.r*0.4;
-      ctx.moveTo(rx,ry); ctx.lineTo(rx-2,ry+11);
-    }
-    ctx.stroke();
-  }
-  /* wind shelter lees */
-  if(wind.strength>0.3){
-    ctx.fillStyle='rgba(120,220,200,0.06)';
-    for(var li=0;li<PILLARS.length;li++){
-      var lp=PILLARS[li]; if(!onScreen(lp.x,lp.y,140)) continue;
-      if(wind.dir>0) ctx.fillRect(lp.x+PILLAR_W-cam.x,lp.y-cam.y,92,PILLAR_H);
-      else ctx.fillRect(lp.x-92-cam.x,lp.y-cam.y,92,PILLAR_H);
-    }
-  }
-  /* pillars */
-  for(var pi2=0;pi2<PILLARS.length;pi2++){
-    var p=PILLARS[pi2]; if(!onScreen(p.x,p.y,80)) continue;
-    var px=p.x-cam.x, py=p.y-cam.y;
-    ctx.fillStyle='rgba(0,0,0,0.35)';
-    ctx.beginPath(); ctx.ellipse(px+PILLAR_W/2,py+PILLAR_H+3,PILLAR_W*0.62,7,0,0,6.29); ctx.fill();
-    var pg=ctx.createLinearGradient(px,py,px,py+PILLAR_H);
-    pg.addColorStop(0,'#4b5468'); pg.addColorStop(0.5,'#39415a'); pg.addColorStop(1,'#232a3e');
-    ctx.fillStyle=pg; ctx.fillRect(px,py,PILLAR_W,PILLAR_H);
-    ctx.fillStyle='rgba(200,215,240,0.13)'; ctx.fillRect(px,py,PILLAR_W,5);
-    ctx.strokeStyle='rgba(6,8,14,0.5)'; ctx.lineWidth=1;
-    ctx.beginPath();
-    ctx.moveTo(px+8,py+18); ctx.lineTo(px+20,py+30); ctx.lineTo(px+15,py+44);
-    ctx.moveTo(px+PILLAR_W-10,py+10); ctx.lineTo(px+PILLAR_W-18,py+26);
-    ctx.stroke();
-  }
-  /* bonfire pyres */
-  for(var bi=0;bi<bonfires.length;bi++){
-    var b=bonfires[bi]; if(!onScreen(b.x,b.y,120)) continue;
-    var bx=b.x-cam.x, by=b.y-cam.y;
-    ctx.fillStyle='rgba(0,0,0,0.4)';
-    ctx.beginPath(); ctx.ellipse(bx,by+12,34,9,0,0,6.29); ctx.fill();
-    /* stone ring */
-    ctx.fillStyle='#3a4152';
-    for(var st=0;st<7;st++){ var sa=st/7*6.283+b.ph;
-      ctx.beginPath(); ctx.ellipse(bx+Math.cos(sa)*27,by+8+Math.sin(sa)*7,5.5,4,0,0,6.29); ctx.fill(); }
-    /* logs */
-    ctx.strokeStyle=b.lit?'#2a1608':'#3d3a38'; ctx.lineWidth=6; ctx.lineCap='round';
-    ctx.beginPath();
-    ctx.moveTo(bx-16,by+8); ctx.lineTo(bx+10,by-6);
-    ctx.moveTo(bx+16,by+8); ctx.lineTo(bx-10,by-6);
-    ctx.moveTo(bx-4,by+10); ctx.lineTo(bx+2,by-10);
-    ctx.stroke();
-    if(b.lit){
-      /* emit bonfire flames + embers (visual; uses frame dt) */
-      b.acc=(b.acc||0)+dt*46*perfScale;
-      while(b.acc>=1){ b.acc--;
-        spawnP({kind:'flame',tier:Math.floor(Math.random()*3),x:b.x+(Math.random()-0.5)*16,y:b.y-4,
-          vx:(Math.random()-0.5)*10,vy:-46-Math.random()*30,life:0,max:0.4+Math.random()*0.3,
-          size:3.6+Math.random()*3,seed:Math.random()*10}); }
-      b.eacc=(b.eacc||0)+dt*13*perfScale;
-      while(b.eacc>=1){ b.eacc--;
-        spawnP({kind:'ember',x:b.x+(Math.random()-0.5)*14,y:b.y-12,
-          vx:(Math.random()-0.5)*12,vy:-30-Math.random()*30,life:0,max:1+Math.random()*1.4,
-          size:0.9+Math.random()*1.2,seed:Math.random()*10}); }
-    } else {
-      /* faint smolder so unlit pyres read as distant beacons */
-      if(Math.random()<dt*2.2) spawnP({kind:'ember',x:b.x+(Math.random()-0.5)*8,y:b.y-6,
-        vx:0,vy:-16-Math.random()*8,life:0,max:1.1,size:0.9,seed:Math.random()*10});
-    }
-  }
-  /* kindling wisps */
-  for(var wi=0;wi<wisps.length;wi++){
-    var w=wipsGet(wi); if(!onScreen(w.x,w.y,60)) continue;
-    var wxp=w.x-cam.x, wyp=w.y-cam.y+Math.sin(timeG*2.4+w.ph)*3.5;
-    var pulse=0.75+0.25*Math.sin(timeG*5+w.ph);
-    ctx.fillStyle='rgba(255,170,60,'+(0.85*pulse)+')';
-    ctx.beginPath(); ctx.arc(wxp,wyp,3.1*pulse+1,0,6.29); ctx.fill();
-    ctx.fillStyle='rgba(255,240,200,0.95)';
-    ctx.beginPath(); ctx.arc(wxp,wyp,1.4,0,6.29); ctx.fill();
-  }
-  /* moths (bodies in the dark; eyes drawn after the darkness) */
-  for(var mi=0;mi<moths.length;mi++){
-    var m=moths[mi]; if(!onScreen(m.x,m.y,60)) continue;
-    var mx=m.x-cam.x, my=m.y-cam.y, flap=Math.sin(timeG*26+m.ph)*0.55;
-    ctx.fillStyle= m.burn>0 ? 'rgba(60,30,16,0.95)' : 'rgba(10,10,18,0.92)';
-    ctx.beginPath(); ctx.ellipse(mx-7,my-3,7.5,3.6,-0.6-flap*0.4,0,6.29); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(mx+7,my-3,7.5,3.6,0.6+flap*0.4,0,6.29); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(mx,my,4.6,5.8,0,0,6.29); ctx.fill();
-  }
-  /* player */
-  if(player){
-    var sx=player.x-cam.x, sy=player.y-cam.y;
-    ctx.fillStyle='rgba(0,0,0,0.45)';
-    ctx.beginPath(); ctx.ellipse(sx,sy+13,15,5,0,0,6.29); ctx.fill();
-    /* torchbearer sprite — baked atlas; walk cycle from the walk phase,
-       dash pose while flaring, gentle breathing bob at idle */
-    var spd=Math.hypot(player.vx,player.vy);
-    var fr=0;
-    if(flareT>0) fr=3;
-    else if(spd>14) fr=(Math.floor(player.walk/1.8)%2)?2:1;
-    var bobY=(fr===1||fr===2)? -Math.abs(Math.sin(player.walk))*2.6 : Math.sin(timeG*2)*0.5;
-    ctx.save();
-    ctx.translate(sx,sy+13+bobY);
-    ctx.scale(player.dir,1);
-    ctx.drawImage(bearerCv, fr*56,0,56,72, -28,-60,56,72);
-    ctx.restore();
-  }
-
-  /* ---- darkness with punched light ---- */
-  var ff=player?flame/100:1;
-  var sputter=1;
-  if(player&&flame<28&&state==='play') sputter=0.82+0.16*Math.sin(timeG*31)+0.08*Math.sin(timeG*57);
-  var lightR=(74+185*ff)*flick(timeG,3.1)*(flareT>0?1.5:1)*sputter;
-  lctx.globalCompositeOperation='source-over';
-  lctx.clearRect(0,0,W,H);
-  var darkA = state==='win' ? lerp(0.965,0.30,dawnT) : (state==='title'?0.90:0.965);
-  lctx.fillStyle='rgba(2,2,11,'+darkA+')';
-  lctx.fillRect(0,0,W,H);
-  lctx.globalCompositeOperation='destination-out';
-  if(state==='title'){
-    punchLight(W/2,H*0.60,190,0.95);
-    /* side fire pillars: soft light columns down both edges */
-    for(var tp=54;tp<H;tp+=86){
-      punchLight(42,tp,104,0.5*flick(timeG,tp*0.13));
-      punchLight(W-42,tp+43,104,0.5*flick(timeG,tp*0.17+2.4));
-    }
-  } else if(player){
-    /* wide, weak halo first: ground tiles stay dimly visible well beyond
-       the bright core, fading out with distance from the fire */
-    punchLight(sx,sy-8,lightR*2.1,0.34);
-    punchLight(sx,sy-8,lightR,0.97);
-    for(var lb=0;lb<bonfires.length;lb++){
-      var bb=bonfires[lb]; if(!onScreen(bb.x,bb.y,240)) continue;
-      if(bb.lit) punchLight(bb.x-cam.x,bb.y-10-cam.y,178*flick(timeG,bb.ph),0.9);
-      else punchLight(bb.x-cam.x,bb.y-8-cam.y,34,0.30);
-    }
-    for(var lw=0;lw<wisps.length;lw++){
-      var ww=wisps[lw]; if(!onScreen(ww.x,ww.y,80)) continue;
-      punchLight(ww.x-cam.x,ww.y-cam.y,42,0.5);
-    }
-  }
-  ctx.drawImage(lightCv,0,0);
-
-  /* dawn wash on win */
-  if(state==='win'&&dawnT>0){
-    var dg=ctx.createLinearGradient(0,0,0,H);
-    dg.addColorStop(0,'rgba(255,166,88,'+(0.35*dawnT)+')');
-    dg.addColorStop(0.6,'rgba(255,120,70,'+(0.16*dawnT)+')');
-    dg.addColorStop(1,'rgba(70,40,80,'+(0.10*dawnT)+')');
-    ctx.fillStyle=dg; ctx.fillRect(0,0,W,H);
-  }
-
-  /* ---- additive fire pass ---- */
-  ctx.globalCompositeOperation='lighter';
-  if(player&&state!=='title'){
-    /* warm tint around the bearer */
-    var wg=ctx.createRadialGradient(sx,sy-8,0,sx,sy-8,lightR*0.85);
-    wg.addColorStop(0,'rgba(255,138,38,0.13)'); wg.addColorStop(1,'rgba(255,90,20,0)');
-    ctx.fillStyle=wg; ctx.fillRect(sx-lightR,sy-8-lightR,lightR*2,lightR*2);
-    /* bearer's inner glow — fixed radius 44 (also the QA tracking beacon) */
-    var ig=ctx.createRadialGradient(sx,sy-6,0,sx,sy-6,44);
-    ig.addColorStop(0,'rgba(255,176,74,0.20)'); ig.addColorStop(1,'rgba(255,140,40,0)');
-    ctx.fillStyle=ig; ctx.fillRect(sx-44,sy-6-44,88,88);
-  }
-  /* particles: flames, embers, trails, bursts */
-  for(var pp=0;pp<parts.length;pp++){
-    var P=parts[pp];
-    var pxp=P.scr?P.x:P.x-cam.x, pyp=P.scr?P.y:P.y-cam.y;
-    if(pxp<-30||pxp>W+30||pyp<-30||pyp>H+30) { if(P.kind!=='smoke') continue; }
-    var lf=1-P.life/P.max;
-    if(P.kind==='flame'){
-      var col;
-      if(P.tier===0) col='255,232,170';
-      else if(P.tier===1) col='255,150,44';
-      else col='226,62,14';
-      ctx.fillStyle='rgba('+col+','+(0.5*lf)+')';
-      ctx.beginPath();
-      if(P.stretch) ctx.ellipse(pxp,pyp,P.size*0.55*(0.45+0.55*lf),P.size*P.stretch*(0.45+0.55*lf),0,0,6.29);
-      else ctx.arc(pxp,pyp,P.size*(0.5+0.5*lf),0,6.29);
-      ctx.fill();
-    } else if(P.kind==='ember'||P.kind==='burst'||P.kind==='spinoff'){
-      var tw=0.6+0.4*Math.sin(timeG*17+P.seed*8);
-      ctx.fillStyle='rgba(255,'+(150+Math.floor(70*lf))+',52,'+(0.85*lf*tw)+')';
-      ctx.beginPath(); ctx.arc(pxp,pyp,Math.max(0.5,P.size*lf),0,6.29); ctx.fill();
-    } else if(P.kind==='trail'){
-      ctx.fillStyle='rgba(255,120,30,'+(0.42*lf)+')';
-      ctx.beginPath(); ctx.arc(pxp,pyp,P.size*(0.4+0.6*lf),0,6.29); ctx.fill();
-    }
-  }
-  /* bonfire flame bodies */
-  for(var fb=0;fb<bonfires.length;fb++){
-    var fbb=bonfires[fb]; if(!fbb.lit||!onScreen(fbb.x,fbb.y,120)) continue;
-    flameBody(fbb.x-cam.x,fbb.y-6,1.55+0.25*Math.sin(timeG*3+fbb.ph),wind.strength*wind.dir*10,timeG+fbb.ph);
-  }
-  /* torch flame body */
-  if(player&&state!=='title'&&state!=='lose'){
-    var tt=torchTip();
-    var lean=clamp(player.vx*0.045,-9,9)+wind.strength*wind.dir*13;
-    var fscale=(0.34+0.72*ff)*(flareT>0?1.65:1)*(flame<28?(0.85+0.2*Math.sin(timeG*29)):1);
-    flameBody(tt.x-cam.x,tt.y-cam.y+8,fscale,lean,timeG);
-  }
-  if(state==='title'){
-    /* side fire pillars — ONE continuous wall of flame up each edge */
-    var sideXs=[44,W-44];
-    for(var sxi=0;sxi<2;sxi++){
-      var sxx=sideXs[sxi];
-      var sg=ctx.createLinearGradient(sxx-76,0,sxx+76,0);
-      sg.addColorStop(0,'rgba(255,110,25,0)');
-      sg.addColorStop(0.5,'rgba(255,110,25,0.12)');
-      sg.addColorStop(1,'rgba(255,110,25,0)');
-      ctx.fillStyle=sg; ctx.fillRect(sxx-76,0,152,H);
-      drawSideFlame(sxx,timeG,sxi*2.3);
-    }
-    drawBigFlame(W/2,H*0.64,128,130,timeG,0.7);
-    var tg=ctx.createRadialGradient(W/2,H*0.60,0,W/2,H*0.60,150);
-    tg.addColorStop(0,'rgba(255,150,50,0.16)'); tg.addColorStop(1,'rgba(255,120,30,0)');
-    ctx.fillStyle=tg; ctx.fillRect(W/2-150,H*0.60-150,300,300);
-  }
-  /* moth eyes — pale dots in the dark */
-  ctx.globalCompositeOperation='source-over';
-  for(var me=0;me<moths.length;me++){
-    var mm=moths[me]; if(!onScreen(mm.x,mm.y,60)) continue;
-    ctx.fillStyle='rgba(214,226,255,0.85)';
-    ctx.fillRect(mm.x-cam.x-2.6,mm.y-cam.y-1.6,1.8,1.8);
-    ctx.fillRect(mm.x-cam.x+1.2,mm.y-cam.y-1.6,1.8,1.8);
-  }
-  /* smoke (dark, non-additive) */
-  for(var sp2=0;sp2<parts.length;sp2++){
-    var SP=parts[sp2]; if(SP.kind!=='smoke') continue;
-    var slf=1-SP.life/SP.max;
-    ctx.fillStyle='rgba('+(SP.col||'16,16,22')+','+((SP.alpha||0.34)*slf)+')';
-    ctx.beginPath(); ctx.arc(SP.scr?SP.x:SP.x-cam.x,SP.scr?SP.y:SP.y-cam.y,SP.size,0,6.29); ctx.fill();
-  }
-  /* ignition shockwave rings */
-  for(var ri=0;ri<rings.length;ri++){
-    var R=rings[ri];
-    ctx.strokeStyle='rgba(255,170,70,'+(R.a*0.7)+')'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(R.x-cam.x,R.y-cam.y,R.r,0,6.29); ctx.stroke();
-  }
-  /* warm flash */
-  if(flashA>0){ ctx.fillStyle='rgba(255,176,92,'+(flashA*0.28)+')'; ctx.fillRect(0,0,W,H); }
-  /* ambient embers drifting across the screen */
-  ctx.globalCompositeOperation='lighter';
-  for(var ae=0;ae<ambEmbers.length;ae++){
-    var A=ambEmbers[ae];
-    A.x+=(A.vx+wind.strength*wind.dir*120+(wind.phase==='telegraph'?wind.dir*40:0))*dt;
-    A.y+=A.vy*dt;
-    if(A.x<-12)A.x=W+12; if(A.x>W+12)A.x=-12;
-    if(A.y<-12)A.y=H+12; if(A.y>H+12)A.y=-12;
-    var atw=0.35+0.3*Math.sin(timeG*3+A.seed*7);
-    ctx.fillStyle='rgba(255,160,60,'+atw+')';
-    ctx.fillRect(A.x,A.y,A.size,A.size);
-  }
-  /* title ember field — soft halos + bright cores, fading in and out */
-  if(state==='title'){
-    for(var tei=0;tei<titleEmbers.length;tei++){
-      var TE=titleEmbers[tei];
-      TE.ph+=dt/TE.dur;
-      if(TE.ph>=1){ TE.x=Math.random()*W; TE.y=Math.random()*H; TE.ph=0; TE.dur=6+Math.random()*7; }
-      TE.x+=(TE.vx+Math.sin(timeG*0.6+TE.seed*8)*7)*dt;
-      TE.y+=(TE.vy+Math.cos(timeG*0.5+TE.seed*6)*5)*dt;
-      if(TE.x<-14)TE.x=W+14; if(TE.x>W+14)TE.x=-14;
-      if(TE.y<-14)TE.y=H+14; if(TE.y>H+14)TE.y=-14;
-      var env=Math.sin(Math.PI*Math.min(1,TE.ph));
-      var twk=0.75+0.25*Math.sin(timeG*2.4+TE.seed*9);
-      var tsz=TE.size*(TE.hero?1.9:1);
-      ctx.fillStyle='rgba(255,140,50,'+(0.13*env*twk)+')';
-      ctx.beginPath(); ctx.arc(TE.x,TE.y,tsz*3.1,0,6.29); ctx.fill();
-      ctx.fillStyle=TE.hero? 'rgba(255,222,150,'+(0.9*env*twk)+')' : 'rgba(255,186,92,'+(0.85*env*twk)+')';
-      ctx.beginPath(); ctx.arc(TE.x,TE.y,tsz,0,6.29); ctx.fill();
-    }
-  }
-  ctx.globalCompositeOperation='source-over';
-
-  if(state==='title') renderTitle();
-  else if(state==='play') renderHUD();
-  else if(state==='win') renderEnd(true);
-  else if(state==='lose') renderEnd(false);
-  if(paused&&state==='play'){
-    ctx.fillStyle='rgba(2,2,10,0.55)'; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#e8ddc8'; ctx.font='700 40px Georgia,serif'; ctx.textAlign='center';
-    ctx.fillText('PAUSED',W/2,H/2);
-  }
-}
-function renderTitle(){
-  ctx.textAlign='center';
-  ctx.fillStyle='#f4e3bb';
-  ctx.font='700 74px Georgia,serif';
-  ctx.fillText('EMBERWAKE',W/2,H*0.30);
-  ctx.fillStyle='#ff9a3c';
-  ctx.font='600 21px Georgia,serif';
-  ctx.fillText('O N E   T O R C H   A G A I N S T   T H E   D A R K',W/2,H*0.30+42);
-  ctx.fillStyle='#cdbd97';
-  ctx.font='16px Georgia,serif';
-  ctx.fillText('Your flame is your life and your only light. Cross the drowned kingdom,',W/2,H*0.72);
-  ctx.fillText('stoke the fire with kindling, and light all 7 bonfires to bring the dawn.',W/2,H*0.72+22);
-  ctx.fillStyle='#9d917a';
-  ctx.font='15px Georgia,serif';
-  ctx.fillText('WASD / Arrows — move      SPACE / SHIFT — dash-flare      P — pause      M — mute',W/2,H*0.72+56);
-  ctx.fillText('Touch: drag to steer · hold the FLARE button to dash',W/2,H*0.72+78);
-  ctx.fillStyle='#f4e3bb';
-  ctx.font='600 19px Georgia,serif';
-  if(Math.sin(timeG*3)>-0.4) ctx.fillText('— click, tap, or press ENTER to take up the TORCH —',W/2,H*0.72+112);
-  if(hiScore>0){ ctx.fillStyle='#9d917a'; ctx.font='14px Georgia,serif';
-    ctx.fillText('Best score: '+hiScore,W/2,H*0.72+140); }
-}
-function renderHUD(){
-  /* flame meter */
-  ctx.textAlign='left';
-  ctx.fillStyle='rgba(4,4,12,0.55)'; ctx.fillRect(14,12,238,54);
-  ctx.fillStyle='#f4e3bb'; ctx.font='600 13px Georgia,serif';
-  ctx.fillText('FLAME '+Math.round(flame)+'%',22,31);
-  ctx.fillStyle='#3a0f04'; ctx.fillRect(22,38,180,10);
-  var fg=ctx.createLinearGradient(22,0,202,0);
-  fg.addColorStop(0,'#d8360a'); fg.addColorStop(0.55,'#ff7e1e'); fg.addColorStop(1,'#ffd95e');
-  ctx.fillStyle=fg; ctx.fillRect(22,38,180*Math.max(0,flame/100),10);
-  ctx.fillStyle='#cdbd97'; ctx.font='12px Georgia,serif';
-  ctx.fillText('×'+scoreMult().toFixed(1)+' score',208,48);
-  /* bonfires + score */
-  ctx.textAlign='center';
-  ctx.fillStyle='rgba(4,4,12,0.55)'; ctx.fillRect(W/2-78,12,156,30);
-  ctx.fillStyle='#f4e3bb'; ctx.font='600 15px Georgia,serif';
-  ctx.fillText('BONFIRES '+litCount+'/7',W/2,32);
-  ctx.textAlign='right';
-  ctx.fillStyle='rgba(4,4,12,0.55)'; ctx.fillRect(W-206,12,192,54);
-  ctx.fillStyle='#f4e3bb'; ctx.font='600 14px Georgia,serif';
-  ctx.fillText('SCORE '+Math.floor(score),W-22,31);
-  ctx.fillStyle='#9d917a'; ctx.font='12px Georgia,serif';
-  ctx.fillText('BEST '+hiScore,W-22,50);
-  /* warnings */
-  ctx.textAlign='center';
-  if(wind.phase==='telegraph'){
-    ctx.fillStyle='rgba(160,210,255,'+(0.65+0.35*Math.sin(timeG*10))+')';
-    ctx.font='600 17px Georgia,serif';
-    ctx.fillText('— THE WIND RISES —',W/2,86);
-  } else if(wind.phase==='gust'){
-    ctx.fillStyle= sheltered ? 'rgba(140,255,205,0.9)' : 'rgba(255,120,80,0.9)';
-    ctx.font='600 15px Georgia,serif';
-    ctx.fillText(sheltered?'SHELTERED IN THE LEE':'THE GUST TEARS AT THE FLAME',W/2,86);
-  }
-  if(inDrizzle&&state==='play'){
-    ctx.fillStyle='rgba(150,190,255,0.8)'; ctx.font='13px Georgia,serif';
-    ctx.fillText('DRIZZLE HISSES ON THE FLAME',W/2,108);
-  }
-  if(flame<28&&state==='play'&&Math.sin(timeG*6)>-0.3){
-    ctx.fillStyle='rgba(255,90,50,0.95)'; ctx.font='700 16px Georgia,serif';
-    ctx.fillText('THE FLAME FALTERS — FIND KINDLING',W/2,H-24);
-  }
-  if(isTouch&&state==='play'){
-    ctx.fillStyle='rgba(205,189,151,0.5)'; ctx.font='12px Georgia,serif';
-    ctx.textAlign='left'; ctx.fillText('◐ steer',18,H-16);
-    /* FLARE button — the only touch source of dash-flare */
-    var bx=FLARE_BTN.x, by=FLARE_BTN.y, br=FLARE_BTN.r;
-    var fbg=ctx.createRadialGradient(bx,by,4,bx,by,br+10);
-    fbg.addColorStop(0, touchFlare?'rgba(255,170,70,0.50)':'rgba(255,140,50,0.26)');
-    fbg.addColorStop(1,'rgba(255,120,30,0)');
-    ctx.fillStyle=fbg; ctx.beginPath(); ctx.arc(bx,by,br+10,0,6.29); ctx.fill();
-    ctx.fillStyle= touchFlare?'rgba(120,44,10,0.85)':'rgba(30,16,10,0.72)';
-    ctx.beginPath(); ctx.arc(bx,by,br,0,6.29); ctx.fill();
-    /* a ring of fire PARTICLES around the button — transparent, flickering,
-       always burning upward off the ring, never a solid band */
-    ctx.strokeStyle='rgba(255,120,40,0.16)'; ctx.lineWidth=5;
-    ctx.beginPath(); ctx.arc(bx,by,br+1,0,6.29); ctx.stroke();
-    ctx.globalCompositeOperation='lighter';
-    var NP=64;
-    for(var pi2=0;pi2<NP;pi2++){
-      var sd=(pi2*0.6180339887)%1, sd2=(pi2*0.7548776662)%1, sd3=(pi2*0.3183098861)%1;
-      var age=(timeG/(0.55+sd3*0.5)+sd*7)%1;
-      var aa=sd*6.2832+0.08*Math.sin(timeG*0.7+sd*9);
-      var rrp=br+1+sd2*3;
-      var baseX=bx+Math.cos(aa)*rrp, baseY=by+Math.sin(aa)*rrp;
-      var rise=age*(14+sd2*16)*(touchFlare?1.35:1);
-      var fxp=baseX+Math.sin(timeG*2.2+sd*20+age*4)*2.2*age;
-      var fyp=baseY-rise;
-      var env=Math.sin(Math.PI*age);
-      var sz=(3.2+sd2*3.4)*(1-age*0.55);
-      var fcol= sd3<0.40? '255,150,44' : (sd3<0.75? '255,190,80' : (sd3<0.92? '232,90,30' : '255,230,170'));
-      ctx.fillStyle='rgba('+fcol+','+(0.55*env)+')';
-      ctx.beginPath(); ctx.ellipse(fxp,fyp,sz*0.5,sz*(1.0+sd2*0.8),0,0,6.29); ctx.fill();
-    }
-    ctx.globalCompositeOperation='source-over';
-    ctx.fillStyle='#ffd9a0'; ctx.font='700 12px Georgia,serif'; ctx.textAlign='center';
-    ctx.fillText('FLARE',bx,by+4);
-  }
-}
-function renderEnd(won){
-  ctx.textAlign='center';
-  if(won){
-    ctx.fillStyle='#fff3d0'; ctx.font='700 52px Georgia,serif';
-    ctx.fillText('DAWN BREAKS',W/2,H*0.36);
-    ctx.fillStyle='#ffe1ae'; ctx.font='18px Georgia,serif';
-    ctx.fillText('All seven bonfires burn. The drowned kingdom wakes in gold.',W/2,H*0.36+38);
-  } else {
-    ctx.fillStyle='#aebadd'; ctx.font='700 46px Georgia,serif';
-    ctx.fillText('THE FLAME GUTTERS OUT',W/2,H*0.36);
-    ctx.fillStyle='#8d97b5'; ctx.font='17px Georgia,serif';
-    ctx.fillText('The dark keeps the kingdom for another night.',W/2,H*0.36+36);
-    ctx.fillText('Bonfires lit: '+litCount+' of 7',W/2,H*0.36+62);
-  }
-  ctx.fillStyle='#f4e3bb'; ctx.font='600 24px Georgia,serif';
-  ctx.fillText('FINAL SCORE '+Math.floor(finalScore),W/2,H*0.36+(won?84:110));
-  ctx.fillStyle='#9d917a'; ctx.font='15px Georgia,serif';
-  ctx.fillText('Press R to play again · ENTER for title',W/2,H*0.36+(won?118:144));
-}
-
-/* ============================== LOOP ============================== */
-var lastTs=0;
-function loop(ts){
-  requestAnimationFrame(loop);
-  if(!lastTs) lastTs=ts;
-  var dt=Math.min(0.05,(ts-lastTs)/1000); lastTs=ts;
-  if(!(dt>0)) dt=0.016;
-  /* adaptive particle budget */
-  emaDt=emaDt*0.95+(dt*1000)*0.05;
-  perfScale= emaDt<19?1 : (emaDt<24?0.65:0.4);
-  /* state keys */
-  if(state==='title'&&keyHit('enter')) startRun();
-  else if(state==='win'||state==='lose'){
-    if(keyHit('r')) startRun();
-    else if(keyHit('enter')) state='title';
-  } else if(state==='play'){
-    if(keyHit('p')) paused=!paused;
-    if(keyHit('r')) startRun();
-  }
-  if(state==='title'){
-    timeG+=dt; updateParts(dt);
-    /* demo flame embers over the title torch */
-    if(Math.random()<dt*45) spawnP({kind:'ember',scr:true,x:W/2+(Math.random()-0.5)*36,y:H*0.635,
-      vx:(Math.random()-0.5)*14,vy:-44-Math.random()*40,life:0,max:1+Math.random(),size:1.2,seed:Math.random()*10});
-    if(Math.random()<dt*140) spawnP({kind:'flame',scr:true,tier:Math.floor(Math.random()*3),x:W/2+(Math.random()-0.5)*44,y:H*0.635+4,
-      vx:(Math.random()-0.5)*10,vy:-72-Math.random()*42,life:0,max:0.5+Math.random()*0.3,size:4.5+Math.random()*4.5,stretch:2.0+Math.random()*1.3,seed:Math.random()*10});
-    /* side pillar flame wisps + embers rising along both edges */
-    for(var sde=0;sde<2;sde++){
-      var sdx=sde? W-44:44;
-      if(Math.random()<dt*170) spawnP({kind:'flame',scr:true,tier:Math.floor(Math.random()*3),x:sdx+(Math.random()-0.5)*34,y:H-Math.pow(Math.random(),1.7)*(H-24),
-        vx:(Math.random()-0.5)*8,vy:-95-Math.random()*70,life:0,max:0.6+Math.random()*0.5,size:5+Math.random()*5,stretch:2.4+Math.random()*1.4,seed:Math.random()*10});
-      if(Math.random()<dt*70) spawnP({kind:'ember',scr:true,x:sdx+(Math.random()-0.5)*36,y:20+Math.random()*(H-30),
-        vx:(Math.random()-0.5)*10,vy:-70-Math.random()*60,life:0,max:0.8+Math.random()*0.8,size:1.1,seed:Math.random()*10});
-      /* spinoff: flames and sparks breaking off the pillar into the dark */
-      var inw=sde? -1:1;
-      if(Math.random()<dt*55) spawnP({kind:'flame',scr:true,tier:Math.floor(Math.random()*3),x:sdx+inw*16,y:20+Math.random()*(H-40),
-        vx:inw*(26+Math.random()*55),vy:-60-Math.random()*70,life:0,max:0.5+Math.random()*0.4,size:3.4+Math.random()*3.4,stretch:1.8+Math.random()*1.2,seed:Math.random()*10});
-      if(Math.random()<dt*70) spawnP({kind:'spinoff',scr:true,x:sdx+inw*10,y:16+Math.random()*(H-32),
-        vx:inw*(15+Math.random()*70),vy:-40-Math.random()*80,life:0,max:0.9+Math.random()*0.9,size:1.2+Math.random()*1.4,seed:Math.random()*10});
-      /* smoke hugging the pillar bases, lit warm by the fire — fades out low */
-      if(Math.random()<dt*22) spawnP({kind:'smoke',scr:true,col:'118,112,124',alpha:0.30,x:sdx+(Math.random()-0.5)*30,y:H-96+Math.random()*76,
-        vx:inw*(4+Math.random()*10),vy:-15-Math.random()*13,life:0,max:1.2+Math.random()*0.8,size:9+Math.random()*10,seed:Math.random()*10});
-    }
-  } else {
-    update(dt);
-  }
-  render(dt);
   pressed={};
 }
+function emitTitleFx(dt){
+  /* gentle torch ambience + a field of floating embers wandering the
+     title clearing, like the 2D title screen */
+  if(player&&state==='title'){
+    emitAcc.t=(emitAcc.t||0)+9*dt;
+    while(emitAcc.t>=1){ emitAcc.t--;
+      spawnP({kind:'ember',x:player.x+player.dir*13+(Math.random()-0.5)*6,y:player.y,h:52,
+        vx:(Math.random()-0.5)*10,vy:0,vh:30+Math.random()*30,life:0,max:1+Math.random(),
+        size:0.045+Math.random()*0.03,seed:Math.random()*10,cr:1.0,cg:0.62,cb:0.22,a0:0.8});
+    }
+    /* sparks spinoff off the great side flames, like the original:
+       bright sparks drift and arc off the walls at every height */
+    var walls=titleFx.userData.walls||[];
+    emitAcc.wsp=(emitAcc.wsp||0)+38*dt;
+    while(emitAcc.wsp>=1){ emitAcc.wsp--;
+      var wl=walls[(Math.random()*walls.length)|0];
+      if(!wl) break;
+      var spin=Math.random()<0.22;
+      spawnP({kind:'ember',x:wl.x+(Math.random()-0.5)*40,y:wl.y+(Math.random()-0.5)*40,
+        h:12+Math.random()*640,vx:wl.side*(spin?46+Math.random()*42:6+Math.random()*14)+(Math.random()-0.5)*8,
+        vy:(Math.random()-0.5)*10,vh:26+Math.random()*46,
+        life:0,max:1.6+Math.random()*1.7,size:0.05+Math.random()*0.05,seed:Math.random()*10,
+        cr:1.0,cg:0.58,cb:0.18,a0:0.88});
+    }
+    emitAcc.amb=(emitAcc.amb||0)+22*dt;
+    while(emitAcc.amb>=1){ emitAcc.amb--;
+      var hero=Math.random()<0.16;
+      spawnP({kind:'title',x:player.x+(Math.random()-0.5)*1060,y:player.y+(Math.random()-0.5)*720,
+        h:5+Math.random()*165,vx:-6+Math.random()*12,vy:(Math.random()-0.5)*6,vh:8+Math.random()*14,
+        life:0,max:3.0+Math.random()*2.4,size:hero?0.20:0.085+Math.random()*0.05,seed:Math.random()*10,
+        cr:1.0,cg:0.6,cb:0.2,a0:hero?0.45:0.68});
+    }
+    if(AC&&!muted){
+      if(rumbleGain) rumbleGain.gain.value=0.06;
+      if(crackleGain) crackleGain.gain.value=0.025*(0.7+0.6*Math.random());
+      if(windGain) windGain.gain.value=0.012;
+    }
+  }
+}
+
+/* =====================================================================
+   VIEW SYNC
+   ===================================================================== */
+var camTarget=new THREE.Vector3(X3(SPAWN.x),0,Z3(SPAWN.y));
+var flashVal=0;
+function flick(seed){ return 0.9+0.10*Math.sin(timeG*23+seed*7.0)+0.05*Math.sin(timeG*41+seed*3.1); }
+function syncViews(dt){
+  if(!player) return;
+  var ff=flame/100;
+  /* bearer */
+  var spd=Math.hypot(player.vx,player.vy);
+  var fr=0;
+  if(flareT>0) fr=3;
+  else if(spd>14) fr=(Math.floor(player.walk/1.8)%2)?2:1;
+  bearerTex.offset.x=fr*0.25;
+  var bobY=(fr===1||fr===2)? Math.abs(Math.sin(player.walk))*0.055 : Math.sin(timeG*2)*0.012;
+  bearer.position.set(X3(player.x),bobY,Z3(player.y));
+  bearer.scale.x=player.dir;
+  /* torch flame + light */
+  var tip=torchTipWorld();
+  var sputter=(flame<28&&state==='play') ? (Math.random()<0.24?0.45:1) : 1;
+  var tScale=(0.62+0.5*ff)*(flareT>0?1.35:1)*(0.94+0.10*Math.sin(timeG*13.7));
+  torchFlame.scale.set(tScale,tScale*(0.92+0.3*ff)*(1+0.07*Math.sin(timeG*19.3)),1);
+  torchFlame.position.set(tip.x,tip.y-0.14,tip.z);
+  torchFlame.material.uniforms.uTime.value=timeG;
+  torchFlame.material.uniforms.uIntensity.value=(0.75+0.5*ff)*(0.80+0.30*Math.sin(timeG*17.0)+0.12*Math.sin(timeG*29.0+1.3))*sputter;
+  /* the bearer glows warm by his own torchlight, breathing with it */
+  var bl=(0.62+0.38*ff)*flick(0.53);
+  bearerMat.color.setRGB(0.45+0.62*bl,0.42+0.52*bl,0.40+0.42*bl);
+  torchFlame.material.uniforms.uWind.value=wind.strength*wind.dir*0.85;
+  torchLight.position.set(tip.x,tip.y+0.35,tip.z);
+  torchLight.intensity=(1.05+0.95*ff)*flick(1.3)*(flareT>0?1.5:1);
+  /* the lit area itself flickers with the flame, like the 2D version:
+     its radius breathes and jitters, and its warmth pulses unevenly */
+  var areaFl=0.90+0.09*Math.sin(timeG*11.3)+0.06*Math.sin(timeG*23.7+1.1)+0.04*Math.sin(timeG*5.1+0.5);
+  if(flame<28) areaFl*= (Math.random()<0.2?0.82:1);
+  playerPool.position.set(X3(player.x),0.025,Z3(player.y));
+  playerPool.material.opacity=(0.10+0.15*ff)*areaFl;
+  var ps=(0.9+0.25*ff)*areaFl; playerPool.scale.set(ps,ps,1);
+  /* ground firelight slots */
+  groundUniforms.uLP.value[0].set(tip.x,0.95,tip.z);
+  var gc=groundUniforms.uLC.value[0];
+  var gw=(0.5+0.8*ff)*areaFl;
+  gc.set(1.05*gw,0.58*gw,0.20*gw);
+  groundUniforms.uLR.value[0]=(6.2+3.4*ff+(flareT>0?2.0:0))*areaFl;
+  /* bonfires */
+  for(var i=0;i<bfViews.length;i++){
+    var v=bfViews[i], lit=bonfires[i]&&bonfires[i].lit;
+    if(lit){
+      v.flash=Math.max(0,(v.flash||0)-dt*1.4);
+      updateBonfireFire(v,dt);
+      v.light.intensity=(1.6+3.4*v.flash)*flick(v.seed+2.0);
+      v.pool.material.opacity=0.40+0.08*Math.sin(timeG*9+v.seed);
+      var bfl=0.93+0.07*Math.sin(timeG*9.7+v.seed*3.0);
+      groundUniforms.uLP.value[i+1].set(X3(bonfires[i].x),1.0,Z3(bonfires[i].y));
+      groundUniforms.uLC.value[i+1].set(1.0*bfl,0.52*bfl,0.17*bfl);
+      groundUniforms.uLR.value[i+1]=9.0*bfl;
+    } else {
+      v.light.intensity=0;
+      v.pool.material.opacity=0;
+      groundUniforms.uLR.value[i+1]=0;
+      if(v.smolder.visible) v.smolder.material.opacity=0.22+0.18*Math.sin(timeG*3.1+v.seed*2.0);
+    }
+  }
+  /* moths */
+  while(mothViews.length<moths.length) mothViews.push(makeMothView());
+  for(var mi2=0;mi2<mothViews.length;mi2++){
+    var mv=mothViews[mi2];
+    if(mi2<moths.length){
+      var mm=moths[mi2];
+      mv.grp.visible=true;
+      mv.grp.position.set(X3(mm.x),0.52+Math.sin(timeG*3.3+mm.ph)*0.06,Z3(mm.y));
+      mv.body.rotation.set(0,Math.PI/4,Math.sin(timeG*26+mm.ph)*0.20);
+      mv.body.material.color.setHex(mm.burn>0?0xff8844:0x9aa0b5);
+      mv.eyes.material.opacity=mm.latched?1.0:0.75;
+    } else mv.grp.visible=false;
+  }
+  /* wisps */
+  while(wispViews.length<wisps.length) wispViews.push(makeWispView());
+  for(var wi2=0;wi2<wispViews.length;wi2++){
+    var wv=wispViews[wi2];
+    if(wi2<wisps.length){
+      var ww=wisps[wi2];
+      wv.visible=true;
+      wv.position.set(X3(ww.x),0.42+Math.sin(timeG*2.4+ww.ph)*0.07,Z3(ww.y));
+      var wp=0.5+0.13*Math.sin(timeG*5+ww.ph);
+      wv.scale.set(wp,wp,1);
+    } else wv.visible=false;
+  }
+  /* rain */
+  for(var rz=0;rz<rainViews.length;rz++){
+    var rv=rainViews[rz], arr=rv.geo.attributes.position.array;
+    for(var di2=0;di2<rv.drops.length;di2++){
+      var dr=rv.drops[di2];
+      dr.y-=6.5*dt; if(dr.y<0) dr.y=3.2;
+      arr[di2*3]=dr.x; arr[di2*3+1]=dr.y; arr[di2*3+2]=dr.z;
+    }
+    rv.geo.attributes.position.needsUpdate=true;
+  }
+  /* particles -> GPU buffers */
+  var n=Math.min(parts.length,PMAX);
+  for(var pi3=0;pi3<n;pi3++){
+    var p=parts[pi3], lf=p.life/p.max;
+    pPos[pi3*3]=X3(p.x); pPos[pi3*3+1]=p.h*S; pPos[pi3*3+2]=Z3(p.y);
+    pCol[pi3*3]=p.cr; pCol[pi3*3+1]=p.cg; pCol[pi3*3+2]=p.cb;
+    pSize[pi3]=p.size*(p.kind==='trail'?(0.7+lf):(1-lf*0.45));
+    var env=p.kind==='ember' ? (0.55+0.45*Math.sin(timeG*18+p.seed*27))*(1-lf) : Math.sin(Math.PI*Math.min(1,lf));
+    pAlp[pi3]=p.a0*env;
+  }
+  pGeo.setDrawRange(0,n);
+  pGeo.attributes.position.needsUpdate=true;
+  pGeo.attributes.aColor.needsUpdate=true;
+  pGeo.attributes.aSize.needsUpdate=true;
+  pGeo.attributes.aAlpha.needsUpdate=true;
+  /* ignition fire rings + screen flash */
+  for(var rgi=0;rgi<fireRings.length;rgi++){
+    var rg=fireRings[rgi];
+    if(!rg.active) continue;
+    rg.t+=dt;
+    var rk=rg.t/1.05;
+    if(rk>=1){ rg.active=false; rg.mesh.visible=false; continue; }
+    var rr2=0.3+rk*5.4;
+    rg.mesh.scale.set(rr2,rr2,1);
+    rg.mesh.material.opacity=0.85*(1-rk);
+    rg.mesh.rotation.z+=dt*0.7;
+  }
+  if(flashVal>0){
+    flashVal=Math.max(0,flashVal-dt*0.5);
+    document.getElementById('flash').style.opacity=flashVal;
+  }
+  /* title dressing */
+  titleFx.visible=(state==='title');
+  if(titleFx.visible){
+    var tf=titleFx.userData.items;
+    for(var tfi=0;tfi<tf.length;tfi++)
+      tf[tfi].pool.material.opacity=0.32+0.10*flick(tf[tfi].seed+1.0);
+  }
+  updateFlameCanvases();
+  /* camera */
+  var tx=clamp(X3(player.x),-20.5,20.5), tz=clamp(Z3(player.y),-12.5,12.5);
+  camTarget.x+=(tx-camTarget.x)*Math.min(1,dt*5);
+  camTarget.z+=(tz-camTarget.z)*Math.min(1,dt*5);
+  camera.position.copy(camTarget).add(CAM_OFF);
+  camera.lookAt(camTarget);
+  /* HUD */
+  if(state==='play'||state==='win'||state==='lose'){
+    document.getElementById('flameBar').style.width=clamp(flame,0,100)+'%';
+    document.getElementById('flameLabel').textContent='FLAME '+Math.max(0,Math.round(flame))+'%'+(difficulty==='hard'?' · HARD':'');
+    document.getElementById('mult').textContent='x'+scoreMult().toFixed(1)+' score';
+    document.getElementById('bonfires').textContent='BONFIRES '+litCount+'/7'+(difficulty==='hard'?' · HARD MODE':'');
+    document.getElementById('score').textContent='SCORE '+Math.floor(score);
+    document.getElementById('best').textContent='BEST '+Math.max(hiScore,Math.floor(score));
+  }
+}
+
+/* =====================================================================
+   MAIN LOOP
+   ===================================================================== */
 reset();
 state='title';
+var lastT=performance.now();
+function loop(now){
+  requestAnimationFrame(loop);
+  var dt=Math.min(0.05,(now-lastT)/1000);
+  lastT=now;
+  if(dt>0){
+    if(!paused) update(dt);
+    syncViews(dt);
+  }
+  renderer.render(scene,camera);
+}
 requestAnimationFrame(loop);
 </script>
 </body>
